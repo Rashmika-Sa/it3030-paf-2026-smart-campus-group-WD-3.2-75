@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, Lock, KeyRound } from 'lucide-react';
+import { Menu, X, Lock, KeyRound, Home } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Navbar() {
@@ -25,15 +25,26 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-20">
           
           {/* Left: Logo */}
-          <div className="flex items-center gap-2 cursor-pointer">
-            <img src="/sliit-logo.jpg" alt="SLIIT logo" className="h-9 w-9 rounded-full object-cover bg-white p-1 shadow-sm" />
-            <span className="text-xl md:text-2xl font-bold tracking-tight text-white">
-              SLIIT-HUB<span className="text-sliit-gold">.</span>
-            </span>
+          <div className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2">
+              <img src="/sliit-logo.jpg" alt="SLIIT logo" className="h-9 w-9 rounded-full object-cover bg-white p-1 shadow-sm" />
+              <span className="text-xl md:text-2xl font-bold tracking-tight text-white">
+                SLIIT-HUB<span className="text-sliit-gold">.</span>
+              </span>
+            </Link>
           </div>
 
           {/* Center/Right: Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-6">
+            <Link
+              to="/"
+              aria-label="Go to home"
+              title="Home"
+              className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-gray-600 text-gray-300 hover:text-sliit-gold hover:border-sliit-gold transition-colors"
+            >
+              <Home className="h-4 w-4" />
+            </Link>
+
             {navLinks.map((link) => (
               link.route ? (
                 <Link
@@ -89,6 +100,11 @@ export default function Navbar() {
       {isMenuOpen && (
         <div className="lg:hidden bg-[#222222] border-b border-sliit-gold/30 absolute w-full shadow-2xl">
           <div className="px-4 pt-2 pb-6 space-y-1">
+            <Link to="/" className="flex items-center gap-2 px-3 py-3 text-base font-medium text-gray-300 hover:bg-[#333333] hover:text-sliit-gold rounded-lg transition-colors">
+              <Home className="h-4 w-4" />
+              Home
+            </Link>
+
             {navLinks.map((link) => (
               link.route ? (
                 <Link
