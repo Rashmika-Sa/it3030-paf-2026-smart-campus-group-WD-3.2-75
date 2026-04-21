@@ -11,7 +11,7 @@ export default function Navbar() {
   };
 
   const navLinks = [
-    { name: 'About', restricted: false, href: '#about' },
+    { name: 'About', restricted: false, href: '/about', route: true },
     { name: 'Bookings', restricted: true, href: '#bookings' },
     { name: 'Resources', restricted: true, href: '#resources' },
     { name: 'Tickets', restricted: true, href: '#tickets' },
@@ -35,15 +35,26 @@ export default function Navbar() {
           {/* Center/Right: Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-6">
             {navLinks.map((link) => (
-              <a 
-                key={link.name}
-                href={link.href}
-                onClick={link.restricted ? handleRestrictedClick : undefined}
-                className="flex items-center gap-1 text-gray-300 hover:text-sliit-gold transition-colors font-medium text-sm"
-              >
-                {link.restricted && <Lock className="h-3 w-3 text-gray-500" />}
-                {link.name}
-              </a>
+              link.route ? (
+                <Link
+                  key={link.name}
+                  to={link.href}
+                  className="flex items-center gap-1 text-gray-300 hover:text-sliit-gold transition-colors font-medium text-sm"
+                >
+                  {link.restricted && <Lock className="h-3 w-3 text-gray-500" />}
+                  {link.name}
+                </Link>
+              ) : (
+                <a 
+                  key={link.name}
+                  href={link.href}
+                  onClick={link.restricted ? handleRestrictedClick : undefined}
+                  className="flex items-center gap-1 text-gray-300 hover:text-sliit-gold transition-colors font-medium text-sm"
+                >
+                  {link.restricted && <Lock className="h-3 w-3 text-gray-500" />}
+                  {link.name}
+                </a>
+              )
             ))}
             
             {/* Action Buttons & Forgot Password */}
@@ -79,15 +90,26 @@ export default function Navbar() {
         <div className="lg:hidden bg-[#222222] border-b border-sliit-gold/30 absolute w-full shadow-2xl">
           <div className="px-4 pt-2 pb-6 space-y-1">
             {navLinks.map((link) => (
-              <a 
-                key={link.name}
-                href={link.href}
-                onClick={link.restricted ? handleRestrictedClick : undefined}
-                className="flex items-center gap-2 px-3 py-3 text-base font-medium text-gray-300 hover:bg-[#333333] hover:text-sliit-gold rounded-lg transition-colors"
-              >
-                {link.restricted && <Lock className="h-4 w-4 text-gray-500" />}
-                {link.name}
-              </a>
+              link.route ? (
+                <Link
+                  key={link.name}
+                  to={link.href}
+                  className="flex items-center gap-2 px-3 py-3 text-base font-medium text-gray-300 hover:bg-[#333333] hover:text-sliit-gold rounded-lg transition-colors"
+                >
+                  {link.restricted && <Lock className="h-4 w-4 text-gray-500" />}
+                  {link.name}
+                </Link>
+              ) : (
+                <a 
+                  key={link.name}
+                  href={link.href}
+                  onClick={link.restricted ? handleRestrictedClick : undefined}
+                  className="flex items-center gap-2 px-3 py-3 text-base font-medium text-gray-300 hover:bg-[#333333] hover:text-sliit-gold rounded-lg transition-colors"
+                >
+                  {link.restricted && <Lock className="h-4 w-4 text-gray-500" />}
+                  {link.name}
+                </a>
+              )
             ))}
             <div className="flex flex-col gap-3 mt-6 pt-4 border-t border-gray-800">
               <a href="#forgot-password" className="text-sm font-medium text-gray-400 hover:text-sliit-gold transition-colors text-center underline mb-2">

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { 
   GraduationCap, 
   Mail, 
@@ -55,7 +56,7 @@ export default function Footer() {
           <div>
             <h3 className="font-bold text-white mb-4">Platform</h3>
             <ul className="space-y-3">
-              <li><a href="#" className="text-gray-400 hover:text-sliit-gold transition-colors text-sm">About Us</a></li>
+              <li><Link to="/about" className="text-gray-400 hover:text-sliit-gold transition-colors text-sm">About Us</Link></li>
               <li><a href="#" className="text-gray-400 hover:text-sliit-gold transition-colors text-sm">Features</a></li>
               <li><a href="#" className="text-gray-400 hover:text-sliit-gold transition-colors text-sm">Student Help Center</a></li>
               <li><a href="#" className="text-gray-400 hover:text-sliit-gold transition-colors text-sm">Campus Map</a></li>
