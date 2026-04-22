@@ -7,7 +7,7 @@ export default function Navbar() {
 
   const handleRestrictedClick = (e) => {
     e.preventDefault();
-    alert("Authentication Required: Please Login or Register to access the Student Portal.");
+    alert("Please Login or Register to access the Student Portal.");
   };
 
   const navLinks = [

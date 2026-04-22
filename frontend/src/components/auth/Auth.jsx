@@ -1,31 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Lock, User, Hash, GraduationCap, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useGoogleLogin } from '@react-oauth/google';
 
 export default function Auth() {
+  const sliitEmailRegex = /^(IT|BM|EN)\d+@my.sliit.lk$/i;
   const location = useLocation();
-  const navigate = useNavigate(); // Used to redirect after successful login
-  
+  const navigate = useNavigate(); 
   const [isLogin, setIsLogin] = useState(location.state?.isRegister ? false : true);
-  const [isLoading, setIsLoading] = useState(false); // Tracks if we are waiting for the backend
-  const [errorMessage, setErrorMessage] = useState(""); // Displays backend errors
+  const [isLoading, setIsLoading] = useState(false); 
+  const [errorMessage, setErrorMessage] = useState(""); 
 
   useEffect(() => {
     if (location.state?.isRegister !== undefined) {
       setIsLogin(!location.state.isRegister);
-      setErrorMessage(""); // Clear errors when switching views
+      setErrorMessage(""); 
     }
   }, [location.state]);
 
-  // --- STANDARD AUTHENTICATION LOGIC ---
+  //AUTHENTICATION LOGIC
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     setErrorMessage("");
+
+    const email = e.target.email.value.trim();
+    if (!sliitEmailRegex.test(email)) {
+      setErrorMessage("Email must be IT/BM/EN + numbers and end with @my.sliit.lk (example: IT22000000@my.sliit.lk)");
+      return;
+   }
+
+   setIsLoading(true);
 
     // Gather data from the inputs using their 'name' attributes
     const formData = {
-      email: e.target.email.value,
+      email,
       password: e.target.password.value,
       ...( !isLogin && { 
         fullName: e.target.fullName.value, 
@@ -33,8 +41,7 @@ export default function Auth() {
       })
     };
 
-    // Replace this with your actual backend URL!
-    const backendUrl = "http://localhost:5000"; 
+    const backendUrl = "http://localhost:8081"; 
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
 
     try {
@@ -47,13 +54,10 @@ export default function Auth() {
       const data = await response.json();
 
       if (response.ok) {
-        // Success! Save the token to localStorage
         localStorage.setItem('token', data.token);
-        
-        // Redirect the user to the student dashboard
         navigate('/dashboard'); 
       } else {
-        // Backend sent an error (e.g., "Invalid credentials" or "User exists")
+        // Backend error 
         setErrorMessage(data.message || "Something went wrong. Please try again.");
       }
     } catch (error) {
@@ -64,9 +68,41 @@ export default function Auth() {
     }
   };
 
-  const handleGoogleAuth = () => {
-    console.log("Google Auth coming next!");
-  };
+  const handleGoogleAuth = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setIsLoading(true);
+      setErrorMessage("");
+      
+      try {
+        // Send the Google access token to your backend
+        const response = await fetch("http://localhost:8081/api/auth/google", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          // We send the token so your backend can verify it with Google
+          body: JSON.stringify({ token: tokenResponse.access_token }), 
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+
+          localStorage.setItem('token', data.token);
+          navigate('/dashboard'); 
+        } else {
+          setErrorMessage(data.message || "Failed to authenticate with Google.");
+        }
+      } catch (error) {
+        console.error("Google backend connection failed:", error);
+        setErrorMessage("Could not connect to the server.");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    onError: (error) => {
+      console.error("Google Popup Error:", error);
+      setErrorMessage("Google Authentication failed or was canceled.");
+    }
+  });
 
   return (
     <div className="min-h-screen flex bg-gray-50">
