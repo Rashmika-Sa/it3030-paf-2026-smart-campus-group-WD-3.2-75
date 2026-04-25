@@ -7,6 +7,18 @@ export default function Auth() {
   const sliitEmailRegex = /^(IT|BM|EN)\d+@my\.sliit\.lk$/i;
   const backendUrl = 'http://localhost:8082';
 
+  const redirectByRole = async (token) => {
+    try {
+      const res = await fetch(`${backendUrl}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const user = res.ok ? await res.json() : null;
+      navigate(user?.role === 'ADMIN' ? '/admin' : '/dashboard');
+    } catch {
+      navigate('/dashboard');
+    }
+  };
+
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -110,7 +122,7 @@ export default function Auth() {
 
       if (response.ok) {
         localStorage.setItem('token', data.token);
-        navigate('/dashboard');
+        await redirectByRole(data.token);
       } else {
         setErrorMessage(data.message || data.error || 'OTP verification failed.');
       }

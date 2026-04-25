@@ -279,6 +279,10 @@ public class AuthService {
         return value == null ? null : value.toString();
     }
 
+    public String getEmailByToken(String token) {
+        return activeTokens.get(token);
+    }
+
     private record OtpRecord(String otp, Instant expiresAt, OtpPurpose purpose) {}
     private record PendingRegistration(String fullName, String sliitId, String rawPassword) {}
     private enum OtpPurpose { REGISTER, LOGIN }
