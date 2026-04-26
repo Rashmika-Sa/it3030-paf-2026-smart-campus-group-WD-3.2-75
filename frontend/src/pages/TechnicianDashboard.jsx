@@ -88,6 +88,9 @@ export default function TechnicianDashboard() {
       if (!exists) return [updated, ...prev];
       return prev.map((t) => (t.id === updated.id ? updated : t));
     });
+    if (updated.status === 'CLOSED') {
+      setFilter('CLOSED');
+    }
     setSelectedTicket(updated);
   };
 

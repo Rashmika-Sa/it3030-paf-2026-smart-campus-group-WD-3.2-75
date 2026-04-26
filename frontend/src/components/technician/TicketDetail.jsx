@@ -265,7 +265,7 @@ export default function TicketDetail({ ticket, currentUser, onClose, onUpdate })
               canUpdateStatus && ticketOpen ? 'flex-none px-6' : 'flex-1'
             }`}
           >
-            Close
+            Cancel
           </button>
         </div>
       </div>
