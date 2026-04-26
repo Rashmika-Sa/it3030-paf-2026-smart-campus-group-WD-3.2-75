@@ -194,7 +194,7 @@ function BookingModal({ resource, onClose }) {
   );
 }
 
-export default function DashboardPage() {
+export default function ResourcePage() {
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

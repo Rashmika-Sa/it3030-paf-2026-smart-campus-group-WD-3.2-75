@@ -1,10 +1,15 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
+// Pages
 import LandingPage from './pages/LandingPage';
 import AboutPage from './pages/AboutPage';
-import DashboardPage from './pages/DashboardPage';
+import StudentDashboard from './pages/StudentDashboard';
+import ResourcePage from './pages/ResourcePage';
 import AdminDashboard from './pages/AdminDashboard';
+import TechnicianDashboard from './pages/TechnicianDashboard';
+
+// Components
 import Auth from './components/auth/Auth';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -15,26 +20,45 @@ export default function App() {
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <Router>
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/auth" element={<Auth />} />
 
-          {/* Protected: users */}
+          {/* Standard User Routes (Role: USER) */}
           <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <DashboardPage />
+                <StudentDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resources"
+            element={
+              <ProtectedRoute>
+                <ResourcePage />
               </ProtectedRoute>
             }
           />
 
-          {/* Protected: admins only */}
-          <Route
-            path="/admin"
+          {/* Master Admin Route (Role: ADMIN) */}
+          <Route 
+            path="/admin" 
             element={
-              <ProtectedRoute adminOnly>
+              <ProtectedRoute allowedRoles={['ADMIN']}>
                 <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Technician Route (Role: TECHNICIAN or ADMIN) */}
+          <Route 
+            path="/technician-dashboard" 
+            element={
+              <ProtectedRoute allowedRoles={['TECHNICIAN']}>
+                <TechnicianDashboard />
               </ProtectedRoute>
             }
           />

@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 public class AuthService {
 
     private static final Pattern SLIIT_EMAIL_PATTERN =
-            Pattern.compile("^(IT|BM|EN)\\d+@my\\.sliit\\.lk$", Pattern.CASE_INSENSITIVE);
+        Pattern.compile("^((IT|BM|EN)\\d+|[a-zA-Z]+)@my\\.sliit\\.lk$", Pattern.CASE_INSENSITIVE);
 
     private static final long OTP_EXPIRY_SECONDS = 300; // 5 minutes
 
@@ -52,7 +52,7 @@ public class AuthService {
         if (!isValidSliitEmail(normalizedEmail)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Email must be IT/BM/EN + numbers and end with @my.sliit.lk"
+                    "Email must be a valid SLIIT student ID or staff email ending with @my.sliit.lk"
             );
         }
 
@@ -75,7 +75,7 @@ public class AuthService {
         return new AuthResponse(null, "OTP sent to your email");
     }
 
-    public AuthResponse requestLoginOtp(LoginRequest request) {
+   public AuthResponse requestLoginOtp(LoginRequest request) {
         String normalizedEmail = normalizeEmail(request.getEmail());
 
         if (!isValidSliitEmail(normalizedEmail)) {
@@ -89,6 +89,13 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
+        // If the user is an ADMIN or TECHNICIAN, log them in immediately without an OTP
+        if (user.getRole() == Role.ADMIN || user.getRole() == Role.TECHNICIAN) {
+            String token = createToken(user.getEmail());
+            return new AuthResponse(token, "Login successful"); 
+        }
+
+        
         issueOtp(normalizedEmail, OtpPurpose.LOGIN);
         return new AuthResponse(null, "OTP sent to your email");
     }

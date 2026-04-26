@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 
 export default function Auth() {
-  const sliitEmailRegex = /^(IT|BM|EN)\d+@my\.sliit\.lk$/i;
+  const sliitEmailRegex = /^((IT|BM|EN)\d+|[a-zA-Z]+)@my\.sliit\.lk$/i;
   const backendUrl = 'http://localhost:8082';
 
   const redirectByRole = async (token) => {
@@ -13,7 +13,16 @@ export default function Auth() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const user = res.ok ? await res.json() : null;
-      navigate(user?.role === 'ADMIN' ? '/admin' : '/dashboard');
+      
+      // Route based on the user's role
+      if (user?.role === 'ADMIN') {
+        navigate('/admin');
+      } else if (user?.role === 'TECHNICIAN') {
+        navigate('/technician');
+      } else {
+        navigate('/dashboard'); 
+      }
+      
     } catch {
       navigate('/dashboard');
     }
@@ -55,7 +64,7 @@ export default function Auth() {
     const email = e.target.email.value.trim();
 
     if (!sliitEmailRegex.test(email)) {
-      setErrorMessage('Email must be IT/BM/EN + numbers and end with @my.sliit.lk (example: IT22000000@my.sliit.lk)');
+      setErrorMessage('Email must be a valid SLIIT student ID or staff email ending with @my.sliit.lk');
       return;
     }
 
@@ -82,9 +91,17 @@ export default function Auth() {
       const data = await response.json().catch(() => ({}));
 
       if (response.ok) {
-        setPendingEmail(email);
-        setStep('OTP');
-        setSuccessMessage(data.message || 'OTP sent to your email.');
+        // ✨ VIP BYPASS LOGIC ✨
+        if (data.token) {
+          // If a token is provided immediately, skip OTP and login
+          localStorage.setItem('token', data.token);
+          await redirectByRole(data.token);
+        } else {
+          // Standard student flow: Go to OTP screen
+          setPendingEmail(email);
+          setStep('OTP');
+          setSuccessMessage(data.message || 'OTP sent to your email.');
+        }
       } else {
         setErrorMessage(data.message || data.error || 'Something went wrong. Please try again.');
       }
@@ -151,7 +168,8 @@ export default function Auth() {
 
         if (response.ok) {
           localStorage.setItem('token', data.token);
-          navigate('/dashboard');
+          // Changed to redirectByRole so Google login also respects roles
+          await redirectByRole(data.token); 
         } else {
           setErrorMessage(data.message || data.error || 'Only SLIIT email accounts are allowed.');
         }
@@ -276,7 +294,7 @@ export default function Auth() {
                   disabled={isLoading}
                   className="w-full flex justify-center items-center gap-2 py-4 bg-sliit-gold hover:bg-yellow-500 text-[#222222] rounded-xl font-bold text-lg transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0"
                 >
-                  {isLoading ? <Loader2 className="w-6 h-6 animate-spin text-[#222222]" /> : (isLogin ? 'Send OTP' : 'Send OTP')}
+                  {isLoading ? <Loader2 className="w-6 h-6 animate-spin text-[#222222]" /> : 'Continue'}
                 </button>
               </form>
 
