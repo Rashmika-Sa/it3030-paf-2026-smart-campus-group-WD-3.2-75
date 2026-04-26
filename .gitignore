@@ -1,36 +1,84 @@
-HELP.md
+#######################################
+# 🚀 Spring Boot / Java / Maven
+#######################################
+
+# Compiled files
+*.class
+
+# Logs
+*.log
+
+# Package files
+*.jar
+*.war
+*.ear
+
+# Maven
 target/
 .mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+#######################################
+# 🔐 Sensitive config (IMPORTANT)
+#######################################
 
-### IntelliJ IDEA ###
-.idea
-*.iws
+# Ignore real config with secrets
+application.properties
+application.yml
+
+# Allow example config
+!application-example.properties
+!application-example.yml
+
+# Environment variables
+.env
+
+#######################################
+# 🧠 IDE / Editor files
+#######################################
+
+# VS Code
+.vscode/
+
+# IntelliJ
+.idea/
 *.iml
+*.iws
 *.ipr
 
-### NetBeans ###
+# Eclipse / STS
+.project
+.classpath
+.settings/
+.factorypath
+.springBeans
+.sts4-cache
+.apt_generated
+
+# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
 build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
-### VS Code ###
-.vscode/
+#######################################
+# 🖥️ OS files
+#######################################
 
-# Environment variables
-.env
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Mac
+.DS_Store
+
+#######################################
+# 📦 Optional (keep if needed)
+#######################################
+
+# Node (if frontend inside same repo)
+node_modules/
+
+# Coverage / reports
+coverage/
