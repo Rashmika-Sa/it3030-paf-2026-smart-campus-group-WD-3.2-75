@@ -16,6 +16,8 @@ public class TicketRequest {
     @NotBlank(message = "Location is required")
     private String location;
 
+    private String resourceId;
+
     @NotNull(message = "Category is required")
     private TicketCategory category;
 
@@ -26,8 +28,6 @@ public class TicketRequest {
     private String preferredContactPhone;
     private String preferredContactEmail;
 
-    // --- Getters and Setters ---
-
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
 
@@ -37,6 +37,9 @@ public class TicketRequest {
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
 
+    public String getResourceId() { return resourceId; }
+    public void setResourceId(String resourceId) { this.resourceId = resourceId; }
+
     public TicketCategory getCategory() { return category; }
     public void setCategory(TicketCategory category) { this.category = category; }
 
@@ -44,11 +47,11 @@ public class TicketRequest {
     public void setPriority(TicketPriority priority) { this.priority = priority; }
 
     public String getPreferredContactName() { return preferredContactName; }
-    public void setPreferredContactName(String preferredContactName) { this.preferredContactName = preferredContactName; }
+    public void setPreferredContactName(String v) { this.preferredContactName = v; }
 
     public String getPreferredContactPhone() { return preferredContactPhone; }
-    public void setPreferredContactPhone(String preferredContactPhone) { this.preferredContactPhone = preferredContactPhone; }
+    public void setPreferredContactPhone(String v) { this.preferredContactPhone = v; }
 
     public String getPreferredContactEmail() { return preferredContactEmail; }
-    public void setPreferredContactEmail(String preferredContactEmail) { this.preferredContactEmail = preferredContactEmail; }
+    public void setPreferredContactEmail(String v) { this.preferredContactEmail = v; }
 }

@@ -7,10 +7,11 @@ import java.util.stream.Collectors;
 
 public class TicketResponse {
 
-    private Long id;
+    private String id;
     private String title;
     private String description;
     private String location;
+    private String resourceId;
     private TicketCategory category;
     private TicketPriority priority;
     private TicketStatus status;
@@ -21,55 +22,55 @@ public class TicketResponse {
     private String rejectionReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
     private UserSummary createdBy;
     private UserSummary assignedTo;
     private List<AttachmentSummary> attachments;
     private List<CommentSummary> comments;
+    private List<TechnicianUpdateSummary> technicianUpdates;
 
-    // --- Static factory method ---
-    public static TicketResponse from(IncidentTicket ticket) {
+    public static TicketResponse from(IncidentTicket t) {
         TicketResponse r = new TicketResponse();
-        r.id = ticket.getId();
-        r.title = ticket.getTitle();
-        r.description = ticket.getDescription();
-        r.location = ticket.getLocation();
-        r.category = ticket.getCategory();
-        r.priority = ticket.getPriority();
-        r.status = ticket.getStatus();
-        r.preferredContactName = ticket.getPreferredContactName();
-        r.preferredContactPhone = ticket.getPreferredContactPhone();
-        r.preferredContactEmail = ticket.getPreferredContactEmail();
-        r.resolutionNotes = ticket.getResolutionNotes();
-        r.rejectionReason = ticket.getRejectionReason();
-        r.createdAt = ticket.getCreatedAt();
-        r.updatedAt = ticket.getUpdatedAt();
-        r.createdBy = UserSummary.from(ticket.getCreatedBy());
-        r.assignedTo = ticket.getAssignedTo() != null ? UserSummary.from(ticket.getAssignedTo()) : null;
-        r.attachments = ticket.getAttachments().stream()
+        r.id = t.getId();
+        r.title = t.getTitle();
+        r.description = t.getDescription();
+        r.location = t.getLocation();
+        r.resourceId = t.getResourceId();
+        r.category = t.getCategory();
+        r.priority = t.getPriority();
+        r.status = t.getStatus();
+        r.preferredContactName = t.getPreferredContactName();
+        r.preferredContactPhone = t.getPreferredContactPhone();
+        r.preferredContactEmail = t.getPreferredContactEmail();
+        r.resolutionNotes = t.getResolutionNotes();
+        r.rejectionReason = t.getRejectionReason();
+        r.createdAt = t.getCreatedAt();
+        r.updatedAt = t.getUpdatedAt();
+        r.createdBy = new UserSummary(t.getCreatedById(), t.getCreatedByName(), t.getCreatedByEmail());
+        r.assignedTo = t.getAssignedToId() != null
+                ? new UserSummary(t.getAssignedToId(), t.getAssignedToName(), t.getAssignedToEmail())
+                : null;
+        r.attachments = t.getAttachments().stream()
                 .map(AttachmentSummary::from).collect(Collectors.toList());
-        r.comments = ticket.getComments().stream()
+        r.comments = t.getComments().stream()
                 .map(CommentSummary::from).collect(Collectors.toList());
+        r.technicianUpdates = t.getTechnicianUpdates().stream()
+                .map(TechnicianUpdateSummary::from).collect(Collectors.toList());
         return r;
     }
 
-    // --- Inner summary classes ---
     public static class UserSummary {
-        public Long id;
+        public String id;
         public String name;
         public String email;
-
-        public static UserSummary from(User u) {
-            UserSummary s = new UserSummary();
-            s.id = u.getId();
-            s.name = u.getName();
-            s.email = u.getEmail();
-            return s;
+        public UserSummary(String id, String name, String email) {
+            this.id = id;
+            this.name = name;
+            this.email = email;
         }
     }
 
     public static class AttachmentSummary {
-        public Long id;
+        public String id;
         public String fileName;
         public String fileType;
         public Long fileSize;
@@ -87,11 +88,12 @@ public class TicketResponse {
     }
 
     public static class CommentSummary {
-        public Long id;
+        public String id;
         public String content;
         public LocalDateTime createdAt;
         public LocalDateTime updatedAt;
-        public UserSummary author;
+        public String authorName;
+        public String authorEmail;
 
         public static CommentSummary from(TicketComment c) {
             CommentSummary s = new CommentSummary();
@@ -99,16 +101,36 @@ public class TicketResponse {
             s.content = c.getContent();
             s.createdAt = c.getCreatedAt();
             s.updatedAt = c.getUpdatedAt();
-            s.author = UserSummary.from(c.getAuthor());
+            s.authorName = c.getAuthorName();
+            s.authorEmail = c.getAuthorEmail();
             return s;
         }
     }
 
-    // --- Getters ---
-    public Long getId() { return id; }
+    public static class TechnicianUpdateSummary {
+        public String id;
+        public String technicianName;
+        public TicketStatus statusChanged;
+        public String updateNote;
+        public LocalDateTime updatedAt;
+
+        public static TechnicianUpdateSummary from(TechnicianUpdate u) {
+            TechnicianUpdateSummary s = new TechnicianUpdateSummary();
+            s.id = u.getId();
+            s.technicianName = u.getTechnicianName();
+            s.statusChanged = u.getStatusChanged();
+            s.updateNote = u.getUpdateNote();
+            s.updatedAt = u.getUpdatedAt();
+            return s;
+        }
+    }
+
+    // Getters
+    public String getId() { return id; }
     public String getTitle() { return title; }
     public String getDescription() { return description; }
     public String getLocation() { return location; }
+    public String getResourceId() { return resourceId; }
     public TicketCategory getCategory() { return category; }
     public TicketPriority getPriority() { return priority; }
     public TicketStatus getStatus() { return status; }
@@ -123,4 +145,5 @@ public class TicketResponse {
     public UserSummary getAssignedTo() { return assignedTo; }
     public List<AttachmentSummary> getAttachments() { return attachments; }
     public List<CommentSummary> getComments() { return comments; }
+    public List<TechnicianUpdateSummary> getTechnicianUpdates() { return technicianUpdates; }
 }

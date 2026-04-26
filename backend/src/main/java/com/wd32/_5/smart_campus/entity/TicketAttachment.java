@@ -1,47 +1,21 @@
 package com.wd32._5.smart_campus.entity;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
-@Entity
-@Table(name = "ticket_attachments")
 public class TicketAttachment {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false)
+    private String id = UUID.randomUUID().toString();
     private String fileName;
-
-    @Column(nullable = false)
     private String filePath;
-
-    @Column(nullable = false)
     private String fileType;
-
     private Long fileSize;
-
-    @Column(nullable = false, updatable = false)
     private LocalDateTime uploadedAt;
+    private String uploadedById;
+    private String uploadedByName;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ticket_id", nullable = false)
-    private IncidentTicket ticket;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uploaded_by_id", nullable = false)
-    private User uploadedBy;
-
-    @PrePersist
-    protected void onCreate() {
-        uploadedAt = LocalDateTime.now();
-    }
-
-    // --- Getters and Setters ---
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
     public String getFileName() { return fileName; }
     public void setFileName(String fileName) { this.fileName = fileName; }
@@ -56,10 +30,11 @@ public class TicketAttachment {
     public void setFileSize(Long fileSize) { this.fileSize = fileSize; }
 
     public LocalDateTime getUploadedAt() { return uploadedAt; }
+    public void setUploadedAt(LocalDateTime uploadedAt) { this.uploadedAt = uploadedAt; }
 
-    public IncidentTicket getTicket() { return ticket; }
-    public void setTicket(IncidentTicket ticket) { this.ticket = ticket; }
+    public String getUploadedById() { return uploadedById; }
+    public void setUploadedById(String uploadedById) { this.uploadedById = uploadedById; }
 
-    public User getUploadedBy() { return uploadedBy; }
-    public void setUploadedBy(User uploadedBy) { this.uploadedBy = uploadedBy; }
+    public String getUploadedByName() { return uploadedByName; }
+    public void setUploadedByName(String uploadedByName) { this.uploadedByName = uploadedByName; }
 }

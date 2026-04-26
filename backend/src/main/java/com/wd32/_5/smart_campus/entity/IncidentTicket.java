@@ -1,37 +1,24 @@
 package com.wd32._5.smart_campus.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "incident_tickets")
+@Document(collection = "incident_tickets")
 public class IncidentTicket {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(nullable = false)
     private String title;
-
-    @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
-
-    @Column(nullable = false)
     private String location;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    private String resourceId;
     private TicketCategory category;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private TicketPriority priority;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private TicketStatus status = TicketStatus.OPEN;
 
     private String preferredContactName;
@@ -41,44 +28,23 @@ public class IncidentTicket {
     private String resolutionNotes;
     private String rejectionReason;
 
-    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
     private LocalDateTime updatedAt;
 
-    // Who created this ticket
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by_id", nullable = false)
-    private User createdBy;
+    private String createdById;
+    private String createdByName;
+    private String createdByEmail;
 
-    // Assigned technician/staff
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_to_id")
-    private User assignedTo;
+    private String assignedToId;
+    private String assignedToName;
+    private String assignedToEmail;
 
-    // Up to 3 image attachments
-    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TicketAttachment> attachments = new ArrayList<>();
-
-    // Comments
-    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TicketComment> comments = new ArrayList<>();
+    private List<TechnicianUpdate> technicianUpdates = new ArrayList<>();
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
-    // --- Getters and Setters ---
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
@@ -88,6 +54,9 @@ public class IncidentTicket {
 
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
+
+    public String getResourceId() { return resourceId; }
+    public void setResourceId(String resourceId) { this.resourceId = resourceId; }
 
     public TicketCategory getCategory() { return category; }
     public void setCategory(TicketCategory category) { this.category = category; }
@@ -114,17 +83,35 @@ public class IncidentTicket {
     public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
     public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    public User getCreatedBy() { return createdBy; }
-    public void setCreatedBy(User createdBy) { this.createdBy = createdBy; }
+    public String getCreatedById() { return createdById; }
+    public void setCreatedById(String createdById) { this.createdById = createdById; }
 
-    public User getAssignedTo() { return assignedTo; }
-    public void setAssignedTo(User assignedTo) { this.assignedTo = assignedTo; }
+    public String getCreatedByName() { return createdByName; }
+    public void setCreatedByName(String createdByName) { this.createdByName = createdByName; }
+
+    public String getCreatedByEmail() { return createdByEmail; }
+    public void setCreatedByEmail(String createdByEmail) { this.createdByEmail = createdByEmail; }
+
+    public String getAssignedToId() { return assignedToId; }
+    public void setAssignedToId(String assignedToId) { this.assignedToId = assignedToId; }
+
+    public String getAssignedToName() { return assignedToName; }
+    public void setAssignedToName(String assignedToName) { this.assignedToName = assignedToName; }
+
+    public String getAssignedToEmail() { return assignedToEmail; }
+    public void setAssignedToEmail(String assignedToEmail) { this.assignedToEmail = assignedToEmail; }
 
     public List<TicketAttachment> getAttachments() { return attachments; }
     public void setAttachments(List<TicketAttachment> attachments) { this.attachments = attachments; }
 
     public List<TicketComment> getComments() { return comments; }
     public void setComments(List<TicketComment> comments) { this.comments = comments; }
+
+    public List<TechnicianUpdate> getTechnicianUpdates() { return technicianUpdates; }
+    public void setTechnicianUpdates(List<TechnicianUpdate> technicianUpdates) { this.technicianUpdates = technicianUpdates; }
 }
