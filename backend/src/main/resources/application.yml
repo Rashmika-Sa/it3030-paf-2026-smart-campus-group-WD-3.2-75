@@ -26,3 +26,7 @@ spring:
           auth: true
           starttls:
             enable: true
+
+twilio:
+  account-sid: ${TWILIO_ACCOUNT_SID}
+  auth-token: ${TWILIO_AUTH_TOKEN}
