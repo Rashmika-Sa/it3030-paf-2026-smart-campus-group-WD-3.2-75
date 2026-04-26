@@ -3,6 +3,7 @@ import {
   ClipboardList, Plus, Clock, CheckCircle,
   AlertCircle, X, Loader2, MapPin, MessageSquare,
   Paperclip, ChevronRight, Search, Calendar,
+  Wrench,
   BookOpen, Bell
 } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
@@ -36,12 +37,15 @@ const priorityBar = {
   CRITICAL: 'bg-red-500',
 };
 
+const VIEW_TABS = ['MY_INCIDENTS', 'COMPLETE'];
+
 export default function StudentDashboard() {
   const { user } = useAuth();
 
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('MY_INCIDENTS');
   const [filter, setFilter] = useState('ALL');
   const [search, setSearch] = useState('');
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -68,7 +72,11 @@ export default function StudentDashboard() {
     }
   };
 
-  useEffect(() => { fetchTickets(); }, []);
+  useEffect(() => {
+    fetchTickets();
+    const intervalId = setInterval(fetchTickets, 5000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -95,11 +103,28 @@ export default function StudentDashboard() {
   };
 
   const handleTicketUpdate = (updated) => {
-    setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+    setTickets((prev) => {
+      const exists = prev.some((t) => t.id === updated.id);
+      if (!exists) return [updated, ...prev];
+      return prev.map((t) => (t.id === updated.id ? updated : t));
+    });
     setSelectedTicket(updated);
   };
 
-  const filtered = tickets
+  const hasTechnicianReply = (ticket) => {
+    const hasUpdate = (ticket.technicianUpdates || []).length > 0;
+    const hasTechComment = (ticket.comments || []).some(
+      (c) => c.authorEmail && c.authorEmail === ticket.assignedTo?.email
+    );
+    return hasUpdate || hasTechComment;
+  };
+
+  const tabTickets =
+    activeTab === 'COMPLETE'
+      ? tickets.filter(hasTechnicianReply)
+      : tickets;
+
+  const filtered = tabTickets
     .filter((t) => filter === 'ALL' || t.status === filter)
     .filter((t) =>
       search === '' ||
@@ -159,6 +184,23 @@ export default function StudentDashboard() {
           ))}
         </div>
 
+        {/* Ticket Tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-0.5 mb-6">
+          {VIEW_TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-3 rounded-2xl text-sm font-bold whitespace-nowrap transition-all ${
+                activeTab === tab
+                  ? 'bg-[#222222] text-white shadow-sm'
+                  : 'bg-gray-50 border border-gray-100 text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              {tab === 'MY_INCIDENTS' ? 'My Incidents' : 'Complete'}
+            </button>
+          ))}
+        </div>
+
         {/* Search + Filter */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
@@ -215,6 +257,8 @@ export default function StudentDashboard() {
               <p className="text-gray-400 mb-6 max-w-xs mx-auto">
                 {search
                   ? `No results for "${search}".`
+                  : activeTab === 'COMPLETE'
+                  ? 'No technician replies available yet.'
                   : 'You have not reported any incidents yet.'}
               </p>
               <button
@@ -271,6 +315,11 @@ export default function StudentDashboard() {
                     <span className="flex items-center gap-1">
                       <MessageSquare className="w-3 h-3" />{ticket.comments?.length || 0} comments
                     </span>
+                    {hasTechnicianReply(ticket) && (
+                      <span className="flex items-center gap-1 text-[#F5A623] font-semibold">
+                        <Wrench className="w-3 h-3" />Technician replied
+                      </span>
+                    )}
                     <span className="flex items-center gap-1">
                       <Paperclip className="w-3 h-3" />{ticket.attachments?.length || 0} files
                     </span>

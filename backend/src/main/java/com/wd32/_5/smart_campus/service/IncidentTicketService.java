@@ -143,6 +143,47 @@ public class IncidentTicketService {
         return TicketResponse.from(ticketRepository.save(ticket));
     }
 
+    // ── MARK REVIEWED (Technician/Admin) ─────────────────────
+    public TicketResponse markReviewed(String ticketId, User currentUser) {
+        IncidentTicket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket not found: " + ticketId));
+
+        boolean technicianOrAdmin = currentUser.getRole() == Role.TECHNICIAN
+                || currentUser.getRole() == Role.ADMIN;
+        if (!technicianOrAdmin) {
+            throw new RuntimeException("Not authorized: technician or admin access only");
+        }
+
+        // Auto-assign to the reviewer when ticket is unassigned.
+        if (ticket.getAssignedToId() == null || ticket.getAssignedToId().isBlank()) {
+            ticket.setAssignedToId(currentUser.getId());
+            ticket.setAssignedToName(currentUser.getName());
+            ticket.setAssignedToEmail(currentUser.getEmail());
+        }
+
+        boolean assignedToOtherTech = ticket.getAssignedToId() != null
+                && !ticket.getAssignedToId().equals(currentUser.getId())
+                && currentUser.getRole() != Role.ADMIN;
+        if (assignedToOtherTech) {
+            throw new RuntimeException("Not authorized: ticket is assigned to another technician");
+        }
+
+        if (ticket.getStatus() == TicketStatus.OPEN) {
+            ticket.setStatus(TicketStatus.IN_PROGRESS);
+        }
+
+        TechnicianUpdate update = new TechnicianUpdate();
+        update.setTechnicianId(currentUser.getId());
+        update.setTechnicianName(currentUser.getName());
+        update.setStatusChanged(ticket.getStatus());
+        update.setUpdateNote("Incident reviewed by technician");
+        update.setUpdatedAt(LocalDateTime.now());
+        ticket.getTechnicianUpdates().add(update);
+
+        ticket.setUpdatedAt(LocalDateTime.now());
+        return TicketResponse.from(ticketRepository.save(ticket));
+    }
+
     // ── ASSIGN TECHNICIAN ──────────────────────────────────────
     public TicketResponse assignTechnician(String ticketId, String technicianId,
                                             User currentUser) {

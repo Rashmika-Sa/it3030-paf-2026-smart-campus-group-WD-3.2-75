@@ -33,6 +33,7 @@ const priorityBar = {
 };
 
 const FILTERS = ['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
+const SECTIONS = ['REVIEW_QUEUE', 'MY_REPLIES'];
 
 export default function TechnicianDashboard() {
   const { user } = useAuth();
@@ -40,10 +41,21 @@ export default function TechnicianDashboard() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeSection, setActiveSection] = useState('REVIEW_QUEUE');
   const [filter, setFilter] = useState('ALL');
   const [search, setSearch] = useState('');
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  const hasMyReply = (ticket) => {
+    const hasMyComment = (ticket.comments || []).some(
+      (c) => c.authorEmail === user?.email
+    );
+    const hasMyUpdate = (ticket.technicianUpdates || []).some(
+      (u) => u.technicianName === user?.name
+    );
+    return hasMyComment || hasMyUpdate;
+  };
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -58,7 +70,11 @@ export default function TechnicianDashboard() {
     }
   };
 
-  useEffect(() => { fetchTickets(); }, []);
+  useEffect(() => {
+    fetchTickets();
+    const intervalId = setInterval(fetchTickets, 5000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -67,11 +83,34 @@ export default function TechnicianDashboard() {
   };
 
   const handleTicketUpdate = (updated) => {
-    setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+    setTickets((prev) => {
+      const exists = prev.some((t) => t.id === updated.id);
+      if (!exists) return [updated, ...prev];
+      return prev.map((t) => (t.id === updated.id ? updated : t));
+    });
     setSelectedTicket(updated);
   };
 
-  const filtered = tickets
+  const handleMarkReviewed = async (e, ticketId) => {
+    e.stopPropagation();
+    try {
+      const updated = await ticketApi.markReviewed(ticketId);
+      setTickets((prev) => {
+        const exists = prev.some((t) => t.id === updated.id);
+        if (!exists) return [updated, ...prev];
+        return prev.map((t) => (t.id === updated.id ? updated : t));
+      });
+    } catch (err) {
+      alert(err.message || 'Failed to mark incident as reviewed');
+    }
+  };
+
+  const sectionTickets =
+    activeSection === 'MY_REPLIES'
+      ? tickets.filter(hasMyReply)
+      : tickets;
+
+  const filtered = sectionTickets
     .filter((t) => filter === 'ALL' || t.status === filter)
     .filter((t) =>
       search === '' ||
@@ -81,10 +120,10 @@ export default function TechnicianDashboard() {
     );
 
   const stats = {
-    total: tickets.length,
-    open: tickets.filter((t) => t.status === 'OPEN').length,
-    inProgress: tickets.filter((t) => t.status === 'IN_PROGRESS').length,
-    resolved: tickets.filter((t) => t.status === 'RESOLVED').length,
+    total: sectionTickets.length,
+    open: sectionTickets.filter((t) => t.status === 'OPEN').length,
+    inProgress: sectionTickets.filter((t) => t.status === 'IN_PROGRESS').length,
+    resolved: sectionTickets.filter((t) => t.status === 'RESOLVED').length,
   };
 
   const firstName = user?.name?.split(' ')[0] || 'Technician';
@@ -142,6 +181,23 @@ export default function TechnicianDashboard() {
               </p>
               <p className="text-3xl font-black text-[#222222]">{item.value}</p>
             </div>
+          ))}
+        </div>
+
+        {/* Section Tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-0.5 mb-6">
+          {SECTIONS.map((section) => (
+            <button
+              key={section}
+              onClick={() => setActiveSection(section)}
+              className={`px-4 py-3 rounded-2xl text-sm font-bold whitespace-nowrap transition-all ${
+                activeSection === section
+                  ? 'bg-[#222222] text-white shadow-sm'
+                  : 'bg-gray-50 border border-gray-100 text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              {section === 'REVIEW_QUEUE' ? 'Review Queue' : 'My Replies'}
+            </button>
           ))}
         </div>
 
@@ -203,8 +259,10 @@ export default function TechnicianDashboard() {
               <p className="text-gray-400 mb-6 max-w-xs mx-auto">
                 {search
                   ? `No results for "${search}".`
+                  : activeSection === 'MY_REPLIES'
+                  ? 'You have not replied to any incidents yet.'
                   : filter === 'ALL'
-                  ? 'No tickets have been assigned to you yet.'
+                  ? 'No incidents available in the review queue.'
                   : `No ${filter.replace('_', ' ').toLowerCase()} tickets.`}
               </p>
               {search && (
@@ -283,6 +341,14 @@ export default function TechnicianDashboard() {
 
                 {/* Technician action hint */}
                 <div className="hidden sm:flex flex-col items-end gap-2 shrink-0">
+                  {ticket.status === 'OPEN' && (
+                    <button
+                      onClick={(e) => handleMarkReviewed(e, ticket.id)}
+                      className="text-xs font-bold text-[#222222] bg-[#F5A623] px-3 py-1 rounded-full border border-yellow-200 hover:bg-yellow-400 transition-colors"
+                    >
+                      Mark Reviewed
+                    </button>
+                  )}
                   {ticket.status !== 'CLOSED' && ticket.status !== 'REJECTED' && (
                     <span className="text-xs font-bold text-[#F5A623] bg-yellow-50 px-3 py-1 rounded-full border border-yellow-100">
                       Action needed

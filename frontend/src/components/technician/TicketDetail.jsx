@@ -3,6 +3,7 @@ import {
   X, MapPin, Clock, User, Wrench,
   ChevronDown, ChevronUp
 } from 'lucide-react';
+import { ticketApi } from '../../hooks/useTickets';
 import CommentSection from './CommentSection';
 import AttachmentUpload from './AttachmentUpload';
 import TechnicianUpdateModal from './TechnicianUpdateModal';
@@ -36,7 +37,41 @@ export default function TicketDetail({ ticket, currentUser, onClose, onUpdate })
   const isAdmin = currentUser?.role === 'ADMIN';
   const isAssignedTech = localTicket.assignedTo?.id === currentUser?.id;
   const canUpdateStatus = (isTechnician && isAssignedTech) || isAdmin;
+  const canMarkReviewed = isTechnician
+    && localTicket.status === 'OPEN'
+    && (!localTicket.assignedTo?.id || isAssignedTech);
   const ticketOpen = localTicket.status !== 'CLOSED' && localTicket.status !== 'REJECTED';
+
+  const handleMarkReviewed = async () => {
+    try {
+      const updated = await ticketApi.markReviewed(localTicket.id);
+      handleUpdate(updated);
+    } catch (e) {
+      alert(e.message || 'Failed to mark incident as reviewed');
+    }
+  };
+
+  const handleCloseIncident = async () => {
+    if (!confirm('Close this incident?')) return;
+    try {
+      let workingTicket = localTicket;
+
+      // If a technician tries to close an unassigned ticket, mark it reviewed first
+      // so backend assigns it before closing.
+      if (isTechnician && !isAdmin && !isAssignedTech) {
+        workingTicket = await ticketApi.markReviewed(localTicket.id);
+      }
+
+      const updated = await ticketApi.technicianUpdate(workingTicket.id, {
+        status: 'CLOSED',
+        updateNote: 'Incident closed by technician',
+        resolutionNotes: workingTicket.resolutionNotes || null,
+      });
+      handleUpdate(updated);
+    } catch (e) {
+      alert(e.message || 'Failed to close incident');
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-40 p-0 sm:p-4">
@@ -194,6 +229,15 @@ export default function TicketDetail({ ticket, currentUser, onClose, onUpdate })
         {/* Footer */}
         <div className="p-6 border-t border-gray-100 shrink-0 flex gap-3">
 
+          {canMarkReviewed && (
+            <button
+              onClick={handleMarkReviewed}
+              className="py-3.5 px-4 bg-[#F5A623] hover:bg-yellow-500 text-[#222222] rounded-2xl font-black text-sm transition-all"
+            >
+              Mark Reviewed
+            </button>
+          )}
+
           {/* TECHNICIAN / ADMIN only — Update Status */}
           {canUpdateStatus && ticketOpen && (
             <button
@@ -202,6 +246,15 @@ export default function TicketDetail({ ticket, currentUser, onClose, onUpdate })
             >
               <Wrench className="w-4 h-4" />
               Update Status
+            </button>
+          )}
+
+          {canUpdateStatus && ticketOpen && (
+            <button
+              onClick={handleCloseIncident}
+              className="py-3.5 px-4 bg-[#222222] hover:bg-black text-white rounded-2xl font-black text-sm transition-all"
+            >
+              Close Incident
             </button>
           )}
 

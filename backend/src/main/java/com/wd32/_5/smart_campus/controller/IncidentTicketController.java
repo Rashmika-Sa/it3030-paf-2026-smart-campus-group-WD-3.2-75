@@ -119,6 +119,14 @@ public class IncidentTicketController {
                 ticketService.addTechnicianUpdate(id, request, getUser(principal)));
     }
 
+    // PUT /api/tickets/{id}/mark-reviewed — Technician mark incident as reviewed
+    @PutMapping("/{id}/mark-reviewed")
+    public ResponseEntity<TicketResponse> markReviewed(
+            @PathVariable String id,
+            @AuthenticationPrincipal Object principal) {
+        return ResponseEntity.ok(ticketService.markReviewed(id, getUser(principal)));
+    }
+
     // DELETE /api/tickets/{id} — Delete ticket
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTicket(

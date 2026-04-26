@@ -76,6 +76,8 @@ public class TicketResponse {
         public String fileType;
         public Long fileSize;
         public LocalDateTime uploadedAt;
+        public String uploadedById;
+        public String uploadedByName;
 
         public static AttachmentSummary from(TicketAttachment a) {
             AttachmentSummary s = new AttachmentSummary();
@@ -84,6 +86,8 @@ public class TicketResponse {
             s.fileType = a.getFileType();
             s.fileSize = a.getFileSize();
             s.uploadedAt = a.getUploadedAt();
+            s.uploadedById = a.getUploadedById();
+            s.uploadedByName = a.getUploadedByName();
             return s;
         }
     }

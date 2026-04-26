@@ -56,7 +56,7 @@ export default function AttachmentUpload({ ticket, currentUser, onUpdate }) {
             <span className="text-xs text-gray-400">
               {(a.fileSize / 1024).toFixed(1)} KB
             </span>
-            {a.uploadedByName === currentUser?.name && (
+            {a.uploadedById === currentUser?.id && (
               <button
                 onClick={() => handleDelete(a.id)}
                 className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"
