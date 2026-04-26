@@ -4,7 +4,7 @@ import {
   Plus, Pencil, Trash2, Search, AlertCircle, CheckCircle,
   Building2, FlaskConical, MonitorSmartphone, Video,
   Activity, ChevronRight, ToggleLeft, ToggleRight, GraduationCap,
-  Calendar, Ticket, Settings, Clock
+  Calendar, Ticket, Settings, Clock, CalendarDays, Wrench
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -38,7 +38,7 @@ const TYPE_COLOR = {
 
 const EMPTY_FORM = {
   name: '', type: 'LECTURE_HALL', capacity: '', location: '',
-  description: '', status: 'ACTIVE', availabilityWindows: [],
+  description: '', status: 'ACTIVE', availabilityWindows: [], maintenanceReturnDate: '',
 };
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ function Toast({ toast }) {
 }
 
 // ─── Resource Form Modal ───────────────────────────────────────────────────────
-function ResourceModal({ editingResource, onClose, onSaved, showToast }) {
+function ResourceModal({ editingResource, existingResources = [], onClose, onSaved, showToast }) {
   const [form, setForm] = useState(
     editingResource
       ? {
@@ -65,6 +65,7 @@ function ResourceModal({ editingResource, onClose, onSaved, showToast }) {
           description: editingResource.description || '',
           status: editingResource.status || 'ACTIVE',
           availabilityWindows: editingResource.availabilityWindows || [],
+          maintenanceReturnDate: editingResource.maintenanceReturnDate || '',
         }
       : { ...EMPTY_FORM }
   );
@@ -99,11 +100,24 @@ function ResourceModal({ editingResource, onClose, onSaved, showToast }) {
       setError('Name and location are required.');
       return;
     }
+    const cap = parseInt(form.capacity);
+    if (form.capacity !== '' && (isNaN(cap) || cap < 0)) {
+      setError('Capacity must be a positive number.');
+      return;
+    }
+    const duplicate = existingResources.find(
+      (r) => r.name.trim().toLowerCase() === form.name.trim().toLowerCase() && r.id !== editingResource?.id
+    );
+    if (duplicate) {
+      setError('A resource with this name already exists.');
+      return;
+    }
     setSaving(true);
     const payload = {
       ...form,
-      capacity: parseInt(form.capacity) || 0,
+      capacity: cap || 0,
       availabilityWindows: form.availabilityWindows,
+      maintenanceReturnDate: form.status === 'OUT_OF_SERVICE' ? (form.maintenanceReturnDate || null) : null,
     };
     try {
       const url = isEdit
@@ -174,6 +188,20 @@ function ResourceModal({ editingResource, onClose, onSaved, showToast }) {
                 {RESOURCE_STATUSES.map((s) => <option key={s} value={s}>{s === 'ACTIVE' ? 'Active' : 'Out of Service'}</option>)}
               </select>
             </div>
+            {form.status === 'OUT_OF_SERVICE' && (
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">
+                  Expected Return Date <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  type="date"
+                  value={form.maintenanceReturnDate}
+                  onChange={(e) => setForm({ ...form, maintenanceReturnDate: e.target.value })}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2.5 border border-red-200 bg-red-50 rounded-xl text-sm focus:outline-none focus:border-yellow-400"
+                />
+              </div>
+            )}
             <div className="col-span-2">
               <label className="block text-xs font-semibold text-gray-500 mb-2">Availability Windows</label>
               <div className="space-y-2">
@@ -250,6 +278,121 @@ function ResourceModal({ editingResource, onClose, onSaved, showToast }) {
   );
 }
 
+// ─── Schedule Modal ────────────────────────────────────────────────────────────
+function ScheduleModal({ resource, onClose }) {
+  const windows = resource.availabilityWindows || [];
+
+  const parsed = windows.map((w) => {
+    const idx = w.indexOf(' ');
+    if (idx === -1) return { date: null, time: w };
+    return { date: w.slice(0, idx), time: w.slice(idx + 1) };
+  });
+
+  const grouped = parsed.reduce((acc, w) => {
+    const key = w.date || 'No Date';
+    (acc[key] = acc[key] || []).push(w.time);
+    return acc;
+  }, {});
+
+  const formatDate = (d) => {
+    try { return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); }
+    catch { return d; }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+          <div>
+            <h2 className="font-bold text-[#222222]">{resource.name}</h2>
+            <p className="text-xs text-gray-400">Availability Schedule</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="p-6 overflow-y-auto space-y-4">
+          {resource.status === 'OUT_OF_SERVICE' && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+              <p className="text-sm text-red-700">
+                <span className="font-semibold">Out of Service</span>
+                {resource.maintenanceReturnDate && <span> — Expected return: <strong>{resource.maintenanceReturnDate}</strong></span>}
+              </p>
+            </div>
+          )}
+          {windows.length === 0 ? (
+            <div className="text-center py-10">
+              <CalendarDays className="w-12 h-12 mx-auto mb-3 text-gray-200" />
+              <p className="text-sm font-semibold text-gray-400">No availability windows defined.</p>
+              <p className="text-xs text-gray-300 mt-1">Add windows in the resource editor.</p>
+            </div>
+          ) : (
+            Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([date, times]) => (
+              <div key={date}>
+                <div className="flex items-center gap-2 mb-2">
+                  <CalendarDays className="w-4 h-4 text-yellow-500 shrink-0" />
+                  <span className="text-sm font-bold text-[#222222]">
+                    {date === 'No Date' ? 'No Date' : formatDate(date)}
+                  </span>
+                </div>
+                <div className="space-y-1.5 ml-6">
+                  {times.map((t, i) => (
+                    <div key={i} className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-lg">
+                      <Clock className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="text-sm text-gray-700 font-medium">{t}</span>
+                      <span className="ml-auto text-xs font-semibold text-emerald-600">Available</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Maintenance Prompt ────────────────────────────────────────────────────────
+function MaintenanceDatePrompt({ resource, onConfirm, onCancel }) {
+  const [returnDate, setReturnDate] = useState('');
+  const today = new Date().toISOString().split('T')[0];
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center mb-4">
+          <Wrench className="w-6 h-6 text-red-500" />
+        </div>
+        <h3 className="font-bold text-[#222222] text-base mb-1">Set Maintenance Mode</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          <strong>{resource.name}</strong> will be marked as out of service. Enter the expected return date.
+        </p>
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 mb-1">
+            Expected Return Date <span className="text-gray-400 font-normal">(optional)</span>
+          </label>
+          <input
+            type="date"
+            value={returnDate}
+            onChange={(e) => setReturnDate(e.target.value)}
+            min={today}
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-yellow-400"
+          />
+        </div>
+        <div className="flex gap-3 mt-5">
+          <button onClick={onCancel}
+            className="flex-1 py-2.5 border border-gray-300 rounded-xl font-semibold text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+            Cancel
+          </button>
+          <button onClick={() => onConfirm(returnDate || null)}
+            className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-sm transition-colors">
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Resources Section ─────────────────────────────────────────────────────────
 function ResourcesSection({ showToast }) {
   const [resources, setResources] = useState([]);
@@ -257,7 +400,9 @@ function ResourcesSection({ showToast }) {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [modalResource, setModalResource] = useState(undefined); // undefined = closed, null = new, obj = edit
+  const [modalResource, setModalResource] = useState(undefined);
+  const [scheduleResource, setScheduleResource] = useState(null);
+  const [maintenancePrompt, setMaintenancePrompt] = useState(null);
 
   const fetchResources = async () => {
     setLoading(true);
@@ -300,17 +445,35 @@ function ResourcesSection({ showToast }) {
     }
   };
 
-  const toggleStatus = async (resource) => {
+  const handleStatusClick = (resource) => {
+    if (resource.status === 'ACTIVE') {
+      setMaintenancePrompt(resource);
+    } else {
+      applyToggleStatus(resource, null);
+    }
+  };
+
+  const applyToggleStatus = async (resource, returnDate) => {
     const newStatus = resource.status === 'ACTIVE' ? 'OUT_OF_SERVICE' : 'ACTIVE';
     try {
       const res = await fetch(`${BACKEND}/api/resources/${resource.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ ...resource, status: newStatus, availabilityWindows: resource.availabilityWindows || [] }),
+        body: JSON.stringify({
+          ...resource,
+          status: newStatus,
+          availabilityWindows: resource.availabilityWindows || [],
+          maintenanceReturnDate: newStatus === 'OUT_OF_SERVICE' ? returnDate : null,
+        }),
       });
       if (res.ok) {
-        setResources((prev) => prev.map((r) => r.id === resource.id ? { ...r, status: newStatus } : r));
+        setResources((prev) => prev.map((r) =>
+          r.id === resource.id
+            ? { ...r, status: newStatus, maintenanceReturnDate: newStatus === 'OUT_OF_SERVICE' ? returnDate : null }
+            : r
+        ));
         showToast(`Marked as ${newStatus === 'ACTIVE' ? 'Active' : 'Out of Service'}.`);
+        setMaintenancePrompt(null);
       }
     } catch {
       showToast('Failed to update status.', 'error');
@@ -425,9 +588,8 @@ function ResourcesSection({ showToast }) {
                     {(r.availabilityWindows || []).join(', ') || '—'}
                   </td>
                   <td className="py-3 px-4">
-                    {/* Direct status toggle */}
                     <button
-                      onClick={() => toggleStatus(r)}
+                      onClick={() => handleStatusClick(r)}
                       title={`Click to mark as ${r.status === 'ACTIVE' ? 'Out of Service' : 'Active'}`}
                       className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-bold transition-all border
                         ${r.status === 'ACTIVE'
@@ -438,9 +600,19 @@ function ResourcesSection({ showToast }) {
                         ? <><ToggleRight className="w-3.5 h-3.5" /> Active</>
                         : <><ToggleLeft className="w-3.5 h-3.5" /> Out of Service</>}
                     </button>
+                    {r.status === 'OUT_OF_SERVICE' && r.maintenanceReturnDate && (
+                      <p className="text-xs text-gray-400 mt-1 pl-1">
+                        Returns: {r.maintenanceReturnDate}
+                      </p>
+                    )}
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-1">
+                      <button onClick={() => setScheduleResource(r)}
+                        title="View Schedule"
+                        className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors">
+                        <CalendarDays className="w-4 h-4" />
+                      </button>
                       <button onClick={() => setModalResource(r)}
                         title="Edit"
                         className="p-1.5 rounded-lg hover:bg-yellow-50 text-gray-400 hover:text-sliit-gold transition-colors">
@@ -465,13 +637,31 @@ function ResourcesSection({ showToast }) {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Resource create/edit modal */}
       {modalResource !== undefined && (
         <ResourceModal
           editingResource={modalResource}
+          existingResources={resources}
           onClose={() => setModalResource(undefined)}
           onSaved={() => { setModalResource(undefined); fetchResources(); }}
           showToast={showToast}
+        />
+      )}
+
+      {/* Schedule viewer */}
+      {scheduleResource && (
+        <ScheduleModal
+          resource={scheduleResource}
+          onClose={() => setScheduleResource(null)}
+        />
+      )}
+
+      {/* Maintenance date prompt */}
+      {maintenancePrompt && (
+        <MaintenanceDatePrompt
+          resource={maintenancePrompt}
+          onConfirm={(date) => applyToggleStatus(maintenancePrompt, date)}
+          onCancel={() => setMaintenancePrompt(null)}
         />
       )}
     </div>

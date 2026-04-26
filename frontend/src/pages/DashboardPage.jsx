@@ -203,6 +203,28 @@ export default function DashboardPage() {
   const [minCapacity, setMinCapacity] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [bookingResource, setBookingResource] = useState(null);
+  const [availableNow, setAvailableNow] = useState(false);
+
+  const isCurrentlyAvailable = (resource) => {
+    if (resource.status !== 'ACTIVE') return false;
+    const windows = resource.availabilityWindows || [];
+    if (windows.length === 0) return true;
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const currentMin = now.getHours() * 60 + now.getMinutes();
+    return windows.some((w) => {
+      const spaceIdx = w.indexOf(' ');
+      if (spaceIdx === -1) return true;
+      const date = w.slice(0, spaceIdx);
+      if (date !== todayStr) return false;
+      const timePart = w.slice(spaceIdx + 1);
+      const dashIdx = timePart.indexOf('–');
+      if (dashIdx === -1) return true;
+      const [sh, sm = 0] = timePart.slice(0, dashIdx).split(':').map(Number);
+      const [eh, em = 0] = timePart.slice(dashIdx + 1).split(':').map(Number);
+      return currentMin >= sh * 60 + sm && currentMin <= eh * 60 + em;
+    });
+  };
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -220,11 +242,13 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, [typeFilter, statusFilter, minCapacity, locationFilter]);
 
-  const displayed = resources.filter((r) =>
-    !search ||
-    r.name?.toLowerCase().includes(search.toLowerCase()) ||
-    r.location?.toLowerCase().includes(search.toLowerCase())
-  );
+  const displayed = resources.filter((r) => {
+    const matchesSearch = !search ||
+      r.name?.toLowerCase().includes(search.toLowerCase()) ||
+      r.location?.toLowerCase().includes(search.toLowerCase());
+    const matchesAvailableNow = !availableNow || isCurrentlyAvailable(r);
+    return matchesSearch && matchesAvailableNow;
+  });
 
   const clearFilters = () => {
     setTypeFilter('');
@@ -232,9 +256,10 @@ export default function DashboardPage() {
     setMinCapacity('');
     setLocationFilter('');
     setSearch('');
+    setAvailableNow(false);
   };
 
-  const hasFilters = typeFilter || statusFilter || minCapacity || locationFilter || search;
+  const hasFilters = typeFilter || statusFilter || minCapacity || locationFilter || search || availableNow;
 
   return (
     <>
@@ -276,6 +301,16 @@ export default function DashboardPage() {
                 <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-sliit-gold bg-white">
                   {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
+                <label className={`flex items-center gap-2 px-3 py-2.5 border rounded-xl cursor-pointer transition-all text-sm font-medium select-none
+                  ${availableNow ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                  <input
+                    type="checkbox"
+                    checked={availableNow}
+                    onChange={(e) => setAvailableNow(e.target.checked)}
+                    className="accent-emerald-500 w-3.5 h-3.5"
+                  />
+                  Available Now
+                </label>
                 <input
                   type="number" min="0" value={minCapacity}
                   onChange={(e) => setMinCapacity(e.target.value)}

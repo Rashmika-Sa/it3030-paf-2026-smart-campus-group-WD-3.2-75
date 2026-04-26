@@ -72,5 +72,8 @@ public class ResourceService {
         resource.setImageUrl(req.getImageUrl());
         resource.setStatus(req.getStatus() != null ? req.getStatus() : ResourceStatus.ACTIVE);
         resource.setAvailabilityWindows(req.getAvailabilityWindows());
+        resource.setMaintenanceReturnDate(
+            req.getStatus() == ResourceStatus.OUT_OF_SERVICE ? req.getMaintenanceReturnDate() : null
+        );
     }
 }
