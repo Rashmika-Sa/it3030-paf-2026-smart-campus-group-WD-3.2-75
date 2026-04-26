@@ -118,6 +118,7 @@ public class TicketResponse {
         public TicketStatus statusChanged;
         public String updateNote;
         public String resolutionNotes;
+        public String rejectionReason;
         public LocalDateTime updatedAt;
 
         public static TechnicianUpdateSummary from(TechnicianUpdate u) {
@@ -127,6 +128,7 @@ public class TicketResponse {
             s.statusChanged = u.getStatusChanged();
             s.updateNote = u.getUpdateNote();
             s.resolutionNotes = u.getResolutionNotes();
+            s.rejectionReason = u.getRejectionReason();
             s.updatedAt = u.getUpdatedAt();
             return s;
         }

@@ -11,6 +11,7 @@ public class TechnicianUpdate {
     private TicketStatus statusChanged;
     private String updateNote;
     private String resolutionNotes;
+    private String rejectionReason;
     private LocalDateTime updatedAt;
 
     public String getId() { return id; }
@@ -30,6 +31,9 @@ public class TechnicianUpdate {
 
     public String getResolutionNotes() { return resolutionNotes; }
     public void setResolutionNotes(String resolutionNotes) { this.resolutionNotes = resolutionNotes; }
+
+    public String getRejectionReason() { return rejectionReason; }
+    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }

@@ -127,9 +127,20 @@ public class IncidentTicketService {
             throw new RuntimeException("Not authorized: only assigned technician can update");
         }
 
+        if (request.getStatus() == TicketStatus.REJECTED
+                && (request.getRejectionReason() == null || request.getRejectionReason().isBlank())) {
+            throw new RuntimeException("Rejection reason is required when rejecting a ticket");
+        }
+
         ticket.setStatus(request.getStatus());
-        if (request.getResolutionNotes() != null)
+        if (request.getStatus() == TicketStatus.RESOLVED || request.getStatus() == TicketStatus.CLOSED) {
             ticket.setResolutionNotes(request.getResolutionNotes());
+            ticket.setRejectionReason(null);
+        }
+        if (request.getStatus() == TicketStatus.REJECTED) {
+            ticket.setRejectionReason(request.getRejectionReason());
+            ticket.setResolutionNotes(null);
+        }
 
         TechnicianUpdate update = new TechnicianUpdate();
         update.setTechnicianId(currentUser.getId());
@@ -137,6 +148,7 @@ public class IncidentTicketService {
         update.setStatusChanged(request.getStatus());
         update.setUpdateNote(request.getUpdateNote());
         update.setResolutionNotes(request.getResolutionNotes());
+        update.setRejectionReason(request.getRejectionReason());
         update.setUpdatedAt(LocalDateTime.now());
         ticket.getTechnicianUpdates().add(update);
         ticket.setUpdatedAt(LocalDateTime.now());

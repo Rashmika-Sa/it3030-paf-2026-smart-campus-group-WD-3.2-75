@@ -38,6 +38,7 @@ const priorityBar = {
 };
 
 const VIEW_TABS = ['MY_INCIDENTS', 'COMPLETE'];
+const FILTERS = ['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED'];
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -77,6 +78,12 @@ export default function StudentDashboard() {
     const intervalId = setInterval(fetchTickets, 5000);
     return () => clearInterval(intervalId);
   }, []);
+
+  // Keep tabs predictable by clearing previous tab filters/search.
+  useEffect(() => {
+    setFilter('ALL');
+    setSearch('');
+  }, [activeTab]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -216,7 +223,7 @@ export default function StudentDashboard() {
             />
           </div>
           <div className="flex gap-2 overflow-x-auto pb-0.5">
-            {['ALL','OPEN','IN_PROGRESS','RESOLVED','CLOSED'].map((f) => (
+            {FILTERS.map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}

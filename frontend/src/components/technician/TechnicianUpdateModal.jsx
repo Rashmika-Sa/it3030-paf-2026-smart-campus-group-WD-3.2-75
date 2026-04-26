@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { ticketApi } from '../../hooks/useTickets';
 
-const STATUSES = ['IN_PROGRESS', 'RESOLVED', 'CLOSED'];
+const STATUSES = ['IN_PROGRESS', 'RESOLVED', 'REJECTED', 'CLOSED'];
 
 export default function TechnicianUpdateModal({ ticket, onClose, onUpdate }) {
   const [status, setStatus] = useState(ticket.status);
   const [updateNote, setUpdateNote] = useState('');
   const [resolutionNotes, setResolutionNotes] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -17,6 +18,10 @@ export default function TechnicianUpdateModal({ ticket, onClose, onUpdate }) {
       setError('Update note is required');
       return;
     }
+    if (status === 'REJECTED' && !rejectionReason.trim()) {
+      setError('Rejection reason is required');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -24,6 +29,7 @@ export default function TechnicianUpdateModal({ ticket, onClose, onUpdate }) {
         status,
         updateNote: updateNote.trim(),
         resolutionNotes: resolutionNotes.trim() || null,
+        rejectionReason: rejectionReason.trim() || null,
       });
       onUpdate(updated);
       onClose();
@@ -88,6 +94,21 @@ export default function TechnicianUpdateModal({ ticket, onClose, onUpdate }) {
                 value={resolutionNotes}
                 onChange={(e) => setResolutionNotes(e.target.value)}
                 placeholder="Describe how the issue was resolved..."
+                rows={3}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100 bg-gray-50 resize-none"
+              />
+            </div>
+          )}
+
+          {status === 'REJECTED' && (
+            <div>
+              <label className="block text-sm font-semibold text-[#222222] mb-2">
+                Rejection Reason <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Explain why this incident is rejected..."
                 rows={3}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100 bg-gray-50 resize-none"
               />

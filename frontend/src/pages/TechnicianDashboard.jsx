@@ -32,7 +32,7 @@ const priorityBar = {
   CRITICAL: 'bg-red-500',
 };
 
-const FILTERS = ['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
+const FILTERS = ['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED'];
 const SECTIONS = ['REVIEW_QUEUE', 'MY_REPLIES'];
 
 export default function TechnicianDashboard() {
@@ -75,6 +75,12 @@ export default function TechnicianDashboard() {
     const intervalId = setInterval(fetchTickets, 5000);
     return () => clearInterval(intervalId);
   }, []);
+
+  // Keep section tabs predictable by clearing section-specific filters/search.
+  useEffect(() => {
+    setFilter('ALL');
+    setSearch('');
+  }, [activeSection]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -128,6 +134,18 @@ export default function TechnicianDashboard() {
     inProgress: sectionTickets.filter((t) => t.status === 'IN_PROGRESS').length,
     resolved: sectionTickets.filter((t) => t.status === 'RESOLVED').length,
   };
+
+  const categoryStats = sectionTickets.reduce((acc, ticket) => {
+    const key = ticket.category || 'OTHER';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  const priorityStats = sectionTickets.reduce((acc, ticket) => {
+    const key = ticket.priority || 'LOW';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
 
   const firstName = user?.name?.split(' ')[0] || 'Technician';
 
@@ -185,6 +203,43 @@ export default function TechnicianDashboard() {
               <p className="text-3xl font-black text-[#222222]">{item.value}</p>
             </div>
           ))}
+        </div>
+
+        {/* Category + Priority Stats */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-10">
+          <div className="bg-white border border-gray-100 rounded-3xl p-5">
+            <h3 className="text-sm font-black text-[#222222] mb-4">Tickets by Category</h3>
+            <div className="flex flex-wrap gap-2">
+              {Object.keys(categoryStats).length === 0 && (
+                <span className="text-xs text-gray-400">No category data yet.</span>
+              )}
+              {Object.entries(categoryStats).map(([category, count]) => (
+                <span
+                  key={category}
+                  className="text-xs font-bold px-3 py-1.5 rounded-full bg-purple-50 text-purple-700"
+                >
+                  {category}: {count}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-100 rounded-3xl p-5">
+            <h3 className="text-sm font-black text-[#222222] mb-4">Tickets by Priority</h3>
+            <div className="flex flex-wrap gap-2">
+              {Object.keys(priorityStats).length === 0 && (
+                <span className="text-xs text-gray-400">No priority data yet.</span>
+              )}
+              {Object.entries(priorityStats).map(([priority, count]) => (
+                <span
+                  key={priority}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-full ${priorityColors[priority] || 'bg-gray-100 text-gray-700'}`}
+                >
+                  {priority}: {count}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Section Tabs */}

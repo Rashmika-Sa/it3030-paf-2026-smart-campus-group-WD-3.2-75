@@ -26,6 +26,7 @@ const priorityColors = {
 export default function TicketDetail({ ticket, currentUser, onClose, onUpdate }) {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showTimeline, setShowTimeline] = useState(true);
   const [localTicket, setLocalTicket] = useState(ticket);
 
   const handleUpdate = (updated) => {
@@ -41,6 +42,27 @@ export default function TicketDetail({ ticket, currentUser, onClose, onUpdate })
     && localTicket.status === 'OPEN'
     && (!localTicket.assignedTo?.id || isAssignedTech);
   const ticketOpen = localTicket.status !== 'CLOSED' && localTicket.status !== 'REJECTED';
+
+  const timelineItems = [
+    {
+      id: `created-${localTicket.id}`,
+      timestamp: localTicket.createdAt,
+      title: 'Incident reported',
+      detail: `Reported by ${localTicket.createdBy?.name || 'Student'}`,
+      status: 'OPEN',
+      actor: localTicket.createdBy?.name || 'Student',
+    },
+    ...(localTicket.technicianUpdates || []).map((u) => ({
+      id: `update-${u.id}`,
+      timestamp: u.updatedAt,
+      title: `Status changed to ${(u.statusChanged || '').replace('_', ' ')}`,
+      detail: u.updateNote,
+      status: u.statusChanged,
+      actor: u.technicianName,
+      resolutionNotes: u.resolutionNotes,
+      rejectionReason: u.rejectionReason,
+    })),
+  ].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
   const handleMarkReviewed = async () => {
     try {
@@ -172,6 +194,46 @@ export default function TicketDetail({ ticket, currentUser, onClose, onUpdate })
               <p className="text-sm text-red-900">{localTicket.rejectionReason}</p>
             </div>
           )}
+
+          {/* Status timeline */}
+          <div className="border border-gray-100 rounded-2xl p-4">
+            <button
+              onClick={() => setShowTimeline(!showTimeline)}
+              className="flex items-center gap-2 text-sm font-bold text-[#222222] w-full"
+            >
+              <Clock className="w-4 h-4 text-[#F5A623]" />
+              Ticket Timeline
+              {showTimeline
+                ? <ChevronUp className="w-4 h-4 ml-auto" />
+                : <ChevronDown className="w-4 h-4 ml-auto" />}
+            </button>
+            {showTimeline && (
+              <div className="mt-4 space-y-3">
+                {timelineItems.map((item) => (
+                  <div key={item.id} className="bg-gray-50 border border-gray-100 rounded-xl p-3">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <p className="text-sm font-bold text-[#222222]">{item.title}</p>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusColors[item.status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                        {(item.status || '').replace('_', ' ')}
+                      </span>
+                    </div>
+                    {item.detail && (
+                      <p className="text-xs text-gray-600 mb-1">{item.detail}</p>
+                    )}
+                    {item.resolutionNotes && (
+                      <p className="text-xs text-green-700">Resolution: {item.resolutionNotes}</p>
+                    )}
+                    {item.rejectionReason && (
+                      <p className="text-xs text-red-700">Reason: {item.rejectionReason}</p>
+                    )}
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      {item.actor} · {new Date(item.timestamp).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Technician update history */}
           {localTicket.technicianUpdates?.length > 0 && (
