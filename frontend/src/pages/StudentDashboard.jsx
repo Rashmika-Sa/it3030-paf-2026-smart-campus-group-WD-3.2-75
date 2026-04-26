@@ -320,6 +320,17 @@ export default function StudentDashboard() {
                   <h3 className="font-black text-[#222222] text-base mb-1 line-clamp-1">{ticket.title}</h3>
                   <p className="text-gray-400 text-sm line-clamp-1 mb-3">{ticket.description}</p>
 
+                  {ticket.status === 'REJECTED' && ticket.rejectionReason && (
+                    <div className="mb-3 rounded-2xl border border-red-100 bg-red-50 px-3 py-2">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-red-700 mb-1">
+                        Rejection Reason
+                      </p>
+                      <p className="text-xs text-red-800 line-clamp-2">
+                        {ticket.rejectionReason}
+                      </p>
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap gap-3 text-xs text-gray-400">
                     <span className="flex items-center gap-1">
                       <MapPin className="w-3 h-3" />{ticket.location}

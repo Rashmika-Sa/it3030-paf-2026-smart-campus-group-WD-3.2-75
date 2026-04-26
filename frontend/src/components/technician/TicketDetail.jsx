@@ -28,6 +28,7 @@ export default function TicketDetail({ ticket, currentUser, onClose, onUpdate })
   const [showHistory, setShowHistory] = useState(false);
   const [showTimeline, setShowTimeline] = useState(true);
   const [localTicket, setLocalTicket] = useState(ticket);
+  const [closing, setClosing] = useState(false);
 
   const handleUpdate = (updated) => {
     setLocalTicket(updated);
@@ -36,11 +37,9 @@ export default function TicketDetail({ ticket, currentUser, onClose, onUpdate })
 
   const isTechnician = currentUser?.role === 'TECHNICIAN';
   const isAdmin = currentUser?.role === 'ADMIN';
-  const isAssignedTech = localTicket.assignedTo?.id === currentUser?.id;
-  const canUpdateStatus = (isTechnician && isAssignedTech) || isAdmin;
-  const canMarkReviewed = isTechnician
-    && localTicket.status === 'OPEN'
-    && (!localTicket.assignedTo?.id || isAssignedTech);
+
+  // Technician can update ANY ticket — no assigned check
+  const canUpdateStatus = isTechnician || isAdmin;
   const ticketOpen = localTicket.status !== 'CLOSED' && localTicket.status !== 'REJECTED';
 
   const timelineItems = [
@@ -64,34 +63,20 @@ export default function TicketDetail({ ticket, currentUser, onClose, onUpdate })
     })),
   ].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-  const handleMarkReviewed = async () => {
-    try {
-      const updated = await ticketApi.markReviewed(localTicket.id);
-      handleUpdate(updated);
-    } catch (e) {
-      alert(e.message || 'Failed to mark incident as reviewed');
-    }
-  };
-
   const handleCloseIncident = async () => {
-    if (!confirm('Close this incident?')) return;
+    if (!confirm('Are you sure you want to close this incident?')) return;
+    setClosing(true);
     try {
-      let workingTicket = localTicket;
-
-      // If a technician tries to close an unassigned ticket, mark it reviewed first
-      // so backend assigns it before closing.
-      if (isTechnician && !isAdmin && !isAssignedTech) {
-        workingTicket = await ticketApi.markReviewed(localTicket.id);
-      }
-
-      const updated = await ticketApi.technicianUpdate(workingTicket.id, {
+      const updated = await ticketApi.technicianUpdate(localTicket.id, {
         status: 'CLOSED',
         updateNote: 'Incident closed by technician',
-        resolutionNotes: workingTicket.resolutionNotes || null,
+        resolutionNotes: localTicket.resolutionNotes || null,
       });
       handleUpdate(updated);
     } catch (e) {
       alert(e.message || 'Failed to close incident');
+    } finally {
+      setClosing(false);
     }
   };
 
@@ -100,7 +85,7 @@ export default function TicketDetail({ ticket, currentUser, onClose, onUpdate })
       <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-2xl max-h-[90vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-gray-100 shrink-0">
+        <div className="flex items-start justify-between p-5 border-b border-gray-100 shrink-0">
           <div className="flex-1 pr-4">
             <div className="flex flex-wrap gap-2 mb-2">
               <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${statusColors[localTicket.status]}`}>
@@ -126,7 +111,7 @@ export default function TicketDetail({ ticket, currentUser, onClose, onUpdate })
         </div>
 
         {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 p-6 space-y-6">
+        <div className="overflow-y-auto flex-1 p-5 space-y-5">
 
           {/* Description */}
           <p className="text-gray-500 text-sm leading-relaxed">
@@ -269,7 +254,7 @@ export default function TicketDetail({ ticket, currentUser, onClose, onUpdate })
             </div>
           )}
 
-          {/* Attachments — everyone can upload */}
+          {/* Attachments */}
           <div className="border-t border-gray-100 pt-5">
             <AttachmentUpload
               ticket={localTicket}
@@ -278,7 +263,7 @@ export default function TicketDetail({ ticket, currentUser, onClose, onUpdate })
             />
           </div>
 
-          {/* Comments — everyone can comment */}
+          {/* Comments */}
           <div className="border-t border-gray-100 pt-5">
             <CommentSection
               ticket={localTicket}
@@ -288,44 +273,38 @@ export default function TicketDetail({ ticket, currentUser, onClose, onUpdate })
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-gray-100 shrink-0 flex gap-3">
+        {/* ── FOOTER ── fixed padding, clean layout */}
+        <div className="p-4 border-t border-gray-100 shrink-0">
 
-          {canMarkReviewed && (
-            <button
-              onClick={handleMarkReviewed}
-              className="py-3.5 px-4 bg-[#F5A623] hover:bg-yellow-500 text-[#222222] rounded-2xl font-black text-sm transition-all"
-            >
-              Mark Reviewed
-            </button>
-          )}
-
-          {/* TECHNICIAN / ADMIN only — Update Status */}
+          {/* Technician/Admin action buttons */}
           {canUpdateStatus && ticketOpen && (
-            <button
-              onClick={() => setShowUpdateModal(true)}
-              className="flex-1 py-3.5 bg-[#F5A623] hover:bg-yellow-500 text-[#222222] rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 shadow-md"
-            >
-              <Wrench className="w-4 h-4" />
-              Update Status
-            </button>
+            <div className="flex gap-2 mb-2">
+              {/* Update Status — opens modal */}
+              <button
+                onClick={() => setShowUpdateModal(true)}
+                className="flex-1 py-3 bg-[#F5A623] hover:bg-yellow-500 text-[#222222] rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 shadow-sm"
+              >
+                <Wrench className="w-4 h-4" />
+                Update Status
+              </button>
+
+              {/* Close Incident — direct action */}
+              {localTicket.status === 'RESOLVED' && (
+                <button
+                  onClick={handleCloseIncident}
+                  disabled={closing}
+                  className="flex-1 py-3 bg-[#222222] hover:bg-black text-white rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {closing ? 'Closing...' : 'Close Incident'}
+                </button>
+              )}
+            </div>
           )}
 
-          {canUpdateStatus && ticketOpen && (
-            <button
-              onClick={handleCloseIncident}
-              className="py-3.5 px-4 bg-[#222222] hover:bg-black text-white rounded-2xl font-black text-sm transition-all"
-            >
-              Close Incident
-            </button>
-          )}
-
-          {/* Close button — always */}
+          {/* Cancel — always full width at bottom */}
           <button
             onClick={onClose}
-            className={`py-3.5 border border-gray-200 rounded-2xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors ${
-              canUpdateStatus && ticketOpen ? 'flex-none px-6' : 'flex-1'
-            }`}
+            className="w-full py-3 border border-gray-200 rounded-2xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors"
           >
             Cancel
           </button>

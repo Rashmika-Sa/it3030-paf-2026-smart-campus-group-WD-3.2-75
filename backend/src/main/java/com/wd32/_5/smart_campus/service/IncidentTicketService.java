@@ -66,7 +66,7 @@ public class IncidentTicketService {
         return TicketResponse.from(ticketRepository.save(ticket));
     }
 
-    // ── GET ALL (Admin) ────────────────────────────────────────
+    // ── GET ALL ────────────────────────────────────────────────
     public List<TicketResponse> getAllTickets() {
         return ticketRepository.findAll()
                 .stream().map(TicketResponse::from).collect(Collectors.toList());
@@ -138,9 +138,9 @@ public class IncidentTicketService {
         IncidentTicket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Ticket not found: " + ticketId));
 
-        if (!currentUser.getId().equals(ticket.getAssignedToId())
-                && currentUser.getRole() != Role.ADMIN) {
-            throw new RuntimeException("Not authorized: only assigned technician can update");
+        // ✅ Any TECHNICIAN or ADMIN can update — no assigned check
+        if (currentUser.getRole() != Role.TECHNICIAN && currentUser.getRole() != Role.ADMIN) {
+            throw new RuntimeException("Not authorized");
         }
 
         if (request.getStatus() == TicketStatus.REJECTED
@@ -149,6 +149,7 @@ public class IncidentTicketService {
         }
 
         ticket.setStatus(request.getStatus());
+
         if (request.getStatus() == TicketStatus.RESOLVED || request.getStatus() == TicketStatus.CLOSED) {
             ticket.setResolutionNotes(request.getResolutionNotes());
             ticket.setRejectionReason(null);
@@ -182,7 +183,7 @@ public class IncidentTicketService {
             throw new RuntimeException("Not authorized: technician or admin access only");
         }
 
-        // Auto-assign to the reviewer when ticket is unassigned.
+        // Auto-assign to the reviewer when ticket is unassigned
         if (ticket.getAssignedToId() == null || ticket.getAssignedToId().isBlank()) {
             ticket.setAssignedToId(currentUser.getId());
             ticket.setAssignedToName(currentUser.getName());
@@ -207,7 +208,6 @@ public class IncidentTicketService {
         update.setUpdateNote("Incident reviewed by technician");
         update.setUpdatedAt(LocalDateTime.now());
         ticket.getTechnicianUpdates().add(update);
-
         ticket.setUpdatedAt(LocalDateTime.now());
         return TicketResponse.from(ticketRepository.save(ticket));
     }
@@ -324,14 +324,16 @@ public class IncidentTicketService {
     }
 
     // ── VIEW ATTACHMENT ────────────────────────────────────────
-    public AttachmentFile getAttachmentFile(String ticketId, String attachmentId, User currentUser) {
+    public AttachmentFile getAttachmentFile(String ticketId, String attachmentId,
+                                             User currentUser) {
         IncidentTicket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Ticket not found: " + ticketId));
 
         boolean canAccess = currentUser.getRole() == Role.ADMIN
                 || currentUser.getRole() == Role.TECHNICIAN
                 || ticket.getCreatedById().equals(currentUser.getId())
-                || (ticket.getAssignedToId() != null && ticket.getAssignedToId().equals(currentUser.getId()));
+                || (ticket.getAssignedToId() != null
+                    && ticket.getAssignedToId().equals(currentUser.getId()));
         if (!canAccess) {
             throw new RuntimeException("Not authorized to view this attachment");
         }
