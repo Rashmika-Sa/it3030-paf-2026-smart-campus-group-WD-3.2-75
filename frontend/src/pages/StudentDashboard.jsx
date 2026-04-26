@@ -38,7 +38,7 @@ const priorityBar = {
 };
 
 const VIEW_TABS = ['MY_INCIDENTS', 'COMPLETE'];
-const FILTERS = ['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED'];
+const FILTERS = ['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'];
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -387,7 +387,7 @@ export default function StudentDashboard() {
 
       {/* CREATE TICKET MODAL */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[999] p-0 sm:p-4">
           <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-xl max-h-[90vh] flex flex-col">
 
             <div className="flex items-center justify-between p-6 border-b border-gray-100 shrink-0">

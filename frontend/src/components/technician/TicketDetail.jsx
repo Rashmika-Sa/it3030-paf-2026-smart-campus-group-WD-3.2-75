@@ -81,7 +81,7 @@ export default function TicketDetail({ ticket, currentUser, onClose, onUpdate })
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-40 p-0 sm:p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[999] p-0 sm:p-4">
       <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-2xl max-h-[90vh] flex flex-col">
 
         {/* Header */}
@@ -289,7 +289,7 @@ export default function TicketDetail({ ticket, currentUser, onClose, onUpdate })
               </button>
 
               {/* Close Incident — direct action */}
-              {localTicket.status === 'RESOLVED' && (
+              {/* {localTicket.status === 'RESOLVED' && (
                 <button
                   onClick={handleCloseIncident}
                   disabled={closing}
@@ -297,7 +297,7 @@ export default function TicketDetail({ ticket, currentUser, onClose, onUpdate })
                 >
                   {closing ? 'Closing...' : 'Close Incident'}
                 </button>
-              )}
+              )} */}
             </div>
           )}
 

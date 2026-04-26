@@ -32,7 +32,7 @@ const priorityBar = {
   CRITICAL: 'bg-red-500',
 };
 
-const FILTERS = ['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED'];
+const FILTERS = ['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'];
 const SECTIONS = ['REVIEW_QUEUE', 'MY_REPLIES'];
 
 export default function TechnicianDashboard() {
