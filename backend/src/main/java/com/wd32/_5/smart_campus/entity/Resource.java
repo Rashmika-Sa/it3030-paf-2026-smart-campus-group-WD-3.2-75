@@ -19,6 +19,7 @@ public class Resource {
     private String imageUrl;
     private ResourceStatus status = ResourceStatus.ACTIVE;
     private List<String> availabilityWindows;
+    private String maintenanceReturnDate;
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -46,4 +47,7 @@ public class Resource {
 
     public List<String> getAvailabilityWindows() { return availabilityWindows; }
     public void setAvailabilityWindows(List<String> availabilityWindows) { this.availabilityWindows = availabilityWindows; }
+
+    public String getMaintenanceReturnDate() { return maintenanceReturnDate; }
+    public void setMaintenanceReturnDate(String maintenanceReturnDate) { this.maintenanceReturnDate = maintenanceReturnDate; }
 }

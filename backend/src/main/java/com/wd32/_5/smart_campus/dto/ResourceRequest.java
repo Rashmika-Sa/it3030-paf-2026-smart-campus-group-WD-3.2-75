@@ -14,6 +14,7 @@ public class ResourceRequest {
     private String imageUrl;
     private ResourceStatus status;
     private List<String> availabilityWindows;
+    private String maintenanceReturnDate;
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -38,4 +39,7 @@ public class ResourceRequest {
 
     public List<String> getAvailabilityWindows() { return availabilityWindows; }
     public void setAvailabilityWindows(List<String> availabilityWindows) { this.availabilityWindows = availabilityWindows; }
+
+    public String getMaintenanceReturnDate() { return maintenanceReturnDate; }
+    public void setMaintenanceReturnDate(String maintenanceReturnDate) { this.maintenanceReturnDate = maintenanceReturnDate; }
 }
