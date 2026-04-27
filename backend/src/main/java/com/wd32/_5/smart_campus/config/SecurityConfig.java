@@ -52,7 +52,7 @@ public class SecurityConfig {
                 .requestMatchers("/", "/error", "/api/public/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 // Only Admins and Technicians can access URLs starting with /api/admin/
-                .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN", "TECHNICIAN") 
+                .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "TECHNICIAN")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(tokenAuthFilter, UsernamePasswordAuthenticationFilter.class);

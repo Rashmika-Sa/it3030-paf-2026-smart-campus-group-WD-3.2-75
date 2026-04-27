@@ -29,7 +29,7 @@ export default function StudentDashboard() {
 
       try {
         // Fetching the real user data from your backend
-        const res = await fetch('http://localhost:8082/api/auth/me', {
+        const res = await fetch('http://localhost:8081/api/auth/me', {
           headers: { Authorization: `Bearer ${token}` },
         });
 

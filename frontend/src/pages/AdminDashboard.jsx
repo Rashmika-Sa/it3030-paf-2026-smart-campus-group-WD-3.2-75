@@ -9,7 +9,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
-const BACKEND = 'http://localhost:8082';
+const BACKEND = 'http://localhost:8081';
 const getToken = () => localStorage.getItem('token');
 
 const RESOURCE_TYPES = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'EQUIPMENT'];

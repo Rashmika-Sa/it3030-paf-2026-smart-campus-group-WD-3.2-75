@@ -5,7 +5,7 @@ import { useGoogleLogin } from '@react-oauth/google';
 
 export default function Auth() {
   const sliitEmailRegex = /^((IT|BM|EN)\d+|[a-zA-Z]+)@my\.sliit\.lk$/i;
-  const backendUrl = 'http://localhost:8082';
+  const backendUrl = 'http://localhost:8081';
 
   const redirectByRole = async (token) => {
     try {

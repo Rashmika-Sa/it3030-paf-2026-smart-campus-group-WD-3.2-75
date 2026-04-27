@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const BACKEND = 'http://localhost:8082';
+const BACKEND = 'http://localhost:8081';
 
 export function useAuth() {
   const [user, setUser] = useState(null);
