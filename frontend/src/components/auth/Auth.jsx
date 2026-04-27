@@ -13,16 +13,13 @@ export default function Auth() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const user = res.ok ? await res.json() : null;
-      
-      // Route based on the user's role
       if (user?.role === 'ADMIN') {
         navigate('/admin');
       } else if (user?.role === 'TECHNICIAN') {
         navigate('/technician-dashboard');
       } else {
-        navigate('/dashboard'); 
+        navigate('/dashboard');
       }
-      
     } catch {
       navigate('/dashboard');
     }
@@ -168,8 +165,7 @@ export default function Auth() {
 
         if (response.ok) {
           localStorage.setItem('token', data.token);
-          // Changed to redirectByRole so Google login also respects roles
-          await redirectByRole(data.token); 
+          await redirectByRole(data.token);
         } else {
           setErrorMessage(data.message || data.error || 'Only SLIIT email accounts are allowed.');
         }

@@ -5,6 +5,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import LandingPage from './pages/LandingPage';
 import AboutPage from './pages/AboutPage';
 import StudentDashboard from './pages/StudentDashboard';
+import TechnicianDashboard from './pages/TechnicianDashboard';
 import ResourcePage from './pages/ResourcePage';
 import AdminDashboard from './pages/AdminDashboard';
 
@@ -43,9 +44,19 @@ export default function App() {
             }
           />
 
-          {/* Master Admin Route (Role: ADMIN) */}
-          <Route 
-            path="/admin" 
+          {/* Technician Route */}
+          <Route
+            path="/technician-dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['TECHNICIAN', 'ADMIN']}>
+                <TechnicianDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin Route */}
+          <Route
+            path="/admin"
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'TECHNICIAN']}>
                 <AdminDashboard />

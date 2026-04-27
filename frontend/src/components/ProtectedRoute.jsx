@@ -1,4 +1,3 @@
-import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
@@ -16,16 +15,9 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   // 1. If no user is logged in, send to login page
   if (!user) return <Navigate to="/auth" replace />;
 
-  // 2. If the route specifies allowed roles, check if the user has permission
   if (allowedRoles && allowedRoles.length > 0) {
-    // ADMIN has a master key and can access everything
-    if (user.role === 'ADMIN') {
-        return children;
-    }
-    
-    
     if (!allowedRoles.includes(user.role)) {
-      return <Navigate to="/dashboard" replace />; // Redirect unauthorized users
+      return <Navigate to="/dashboard" replace />;
     }
   }
 

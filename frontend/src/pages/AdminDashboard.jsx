@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   LayoutDashboard, Package, Users, Bell, LogOut, Menu, X,
   Plus, Pencil, Trash2, Search, AlertCircle, CheckCircle,
   Building2, FlaskConical, MonitorSmartphone, Video,
   Activity, ChevronRight, ToggleLeft, ToggleRight, GraduationCap,
-  Calendar, Ticket, Settings, Clock, CalendarDays, Wrench
+  Calendar, Ticket, Settings, Clock, CalendarDays, Wrench,
+  XCircle, Ban, Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -668,6 +669,267 @@ function ResourcesSection({ showToast }) {
   );
 }
 
+// ─── Bookings Section ──────────────────────────────────────────────────────────
+const BOOKING_STATUS_STYLE = {
+  PENDING:   'bg-yellow-100 text-yellow-700 border-yellow-200',
+  APPROVED:  'bg-emerald-100 text-emerald-700 border-emerald-200',
+  REJECTED:  'bg-red-100 text-red-700 border-red-200',
+  CANCELLED: 'bg-gray-100 text-gray-500 border-gray-200',
+};
+
+const BOOKING_STATUS_ICON = {
+  PENDING:   <Clock className="w-3 h-3" />,
+  APPROVED:  <CheckCircle className="w-3 h-3" />,
+  REJECTED:  <XCircle className="w-3 h-3" />,
+  CANCELLED: <Ban className="w-3 h-3" />,
+};
+
+function RejectModal({ booking, onConfirm, onCancel }) {
+  const [reason, setReason] = useState('');
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center mb-4">
+          <XCircle className="w-6 h-6 text-red-500" />
+        </div>
+        <h3 className="font-bold text-[#222222] text-base mb-1">Reject Booking</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          Rejecting booking for <strong>{booking.resourceName}</strong> by <strong>{booking.userName}</strong>.
+        </p>
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 mb-1">Reason</label>
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            rows={3}
+            placeholder="Provide a reason for rejection..."
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-yellow-400 resize-none"
+          />
+        </div>
+        <div className="flex gap-3 mt-5">
+          <button onClick={onCancel}
+            className="flex-1 py-2.5 border border-gray-300 rounded-xl font-semibold text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+            Cancel
+          </button>
+          <button onClick={() => onConfirm(reason)}
+            className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-sm transition-colors">
+            Reject
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BookingsSection({ showToast }) {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [actionLoading, setActionLoading] = useState(null);
+  const [rejectTarget, setRejectTarget] = useState(null);
+
+  const fetchBookings = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = statusFilter ? `?status=${statusFilter}` : '';
+      const res = await fetch(`${BACKEND}/api/bookings${params}`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) setBookings(await res.json());
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter]);
+
+  useEffect(() => { fetchBookings(); }, [fetchBookings]);
+
+  const handleApprove = async (id) => {
+    setActionLoading(id + '_approve');
+    try {
+      const res = await fetch(`${BACKEND}/api/bookings/${id}/approve`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) {
+        setBookings((prev) => prev.map((b) => b.id === id ? { ...b, status: 'APPROVED' } : b));
+        showToast('Booking approved.');
+      } else {
+        showToast('Failed to approve.', 'error');
+      }
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReject = async (id, reason) => {
+    setActionLoading(id + '_reject');
+    setRejectTarget(null);
+    try {
+      const res = await fetch(`${BACKEND}/api/bookings/${id}/reject`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ reason }),
+      });
+      if (res.ok) {
+        setBookings((prev) => prev.map((b) => b.id === id ? { ...b, status: 'REJECTED', adminNote: reason } : b));
+        showToast('Booking rejected.');
+      } else {
+        showToast('Failed to reject.', 'error');
+      }
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const stats = {
+    total:     bookings.length,
+    pending:   bookings.filter((b) => b.status === 'PENDING').length,
+    approved:  bookings.filter((b) => b.status === 'APPROVED').length,
+    rejected:  bookings.filter((b) => b.status === 'REJECTED').length,
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Section header */}
+      <div className="flex items-center gap-3 pb-1">
+        <div className="w-10 h-10 rounded-xl bg-sliit-gold/10 flex items-center justify-center shrink-0">
+          <Calendar className="w-5 h-5 text-yellow-600" />
+        </div>
+        <div>
+          <h2 className="font-bold text-[#222222] text-base leading-tight">Bookings Management</h2>
+          <p className="text-xs text-gray-400">Review and manage all resource booking requests</p>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-4">
+        {[
+          { label: 'Total', value: stats.total, bg: 'bg-white border border-gray-200', iconBg: 'bg-gray-100', icon: <Calendar className="w-4 h-4 text-gray-500" />, color: 'text-[#222222]' },
+          { label: 'Pending', value: stats.pending, bg: 'bg-white border border-yellow-100', iconBg: 'bg-yellow-50', icon: <Clock className="w-4 h-4 text-yellow-600" />, color: 'text-yellow-700' },
+          { label: 'Approved', value: stats.approved, bg: 'bg-white border border-emerald-100', iconBg: 'bg-emerald-50', icon: <CheckCircle className="w-4 h-4 text-emerald-600" />, color: 'text-emerald-700' },
+          { label: 'Rejected', value: stats.rejected, bg: 'bg-white border border-red-100', iconBg: 'bg-red-50', icon: <XCircle className="w-4 h-4 text-red-500" />, color: 'text-red-700' },
+        ].map((s) => (
+          <div key={s.label} className={`${s.bg} rounded-xl px-4 py-3.5 flex items-center gap-3 shadow-sm`}>
+            <div className={`w-9 h-9 rounded-lg ${s.iconBg} flex items-center justify-center shrink-0`}>{s.icon}</div>
+            <div>
+              <p className={`text-xl font-extrabold leading-tight ${s.color}`}>{s.value}</p>
+              <p className="text-xs text-gray-500">{s.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filter */}
+      <div className="flex items-center gap-2">
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-yellow-400">
+          <option value="">All Statuses</option>
+          <option value="PENDING">Pending</option>
+          <option value="APPROVED">Approved</option>
+          <option value="REJECTED">Rejected</option>
+          <option value="CANCELLED">Cancelled</option>
+        </select>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                {['User', 'Resource', 'Date', 'Time Slot', 'Attendees', 'Purpose', 'Status', 'Actions'].map((h) => (
+                  <th key={h} className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-8 h-8 border-3 border-sliit-gold border-t-transparent rounded-full animate-spin" />
+                      <span className="text-sm text-gray-400">Loading bookings…</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : bookings.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <Calendar className="w-10 h-10 text-gray-200" />
+                      <p className="text-sm font-semibold text-gray-400">No bookings found</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : bookings.map((b) => (
+                <tr key={b.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="py-3 px-4 font-medium text-[#222222] max-w-[120px] truncate">{b.userName}</td>
+                  <td className="py-3 px-4 font-semibold text-[#222222] max-w-[140px] truncate">{b.resourceName}</td>
+                  <td className="py-3 px-4 text-gray-600 whitespace-nowrap">{b.date}</td>
+                  <td className="py-3 px-4 text-gray-600 whitespace-nowrap">{b.timeSlot}</td>
+                  <td className="py-3 px-4 text-gray-600">{b.attendees || '—'}</td>
+                  <td className="py-3 px-4 text-gray-500 max-w-[160px] truncate">{b.purpose || '—'}</td>
+                  <td className="py-3 px-4">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${BOOKING_STATUS_STYLE[b.status] || 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                      {BOOKING_STATUS_ICON[b.status]}{b.status}
+                    </span>
+                    {b.status === 'REJECTED' && b.adminNote && (
+                      <p className="text-xs text-gray-400 mt-1 max-w-[140px] truncate" title={b.adminNote}>
+                        {b.adminNote}
+                      </p>
+                    )}
+                  </td>
+                  <td className="py-3 px-4">
+                    {b.status === 'PENDING' && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleApprove(b.id)}
+                          disabled={!!actionLoading}
+                          title="Approve"
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 border border-emerald-200 hover:bg-emerald-50 transition-colors disabled:opacity-50"
+                        >
+                          {actionLoading === b.id + '_approve'
+                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                            : <CheckCircle className="w-3 h-3" />}
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => setRejectTarget(b)}
+                          disabled={!!actionLoading}
+                          title="Reject"
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-600 border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50"
+                        >
+                          {actionLoading === b.id + '_reject'
+                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                            : <XCircle className="w-3 h-3" />}
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {bookings.length > 0 && (
+          <div className="px-4 py-2.5 border-t border-gray-100 text-xs text-gray-400">
+            {bookings.length} booking{bookings.length !== 1 ? 's' : ''}
+          </div>
+        )}
+      </div>
+
+      {rejectTarget && (
+        <RejectModal
+          booking={rejectTarget}
+          onConfirm={(reason) => handleReject(rejectTarget.id, reason)}
+          onCancel={() => setRejectTarget(null)}
+        />
+      )}
+    </div>
+  );
+}
+
 // ─── Placeholder section ───────────────────────────────────────────────────────
 function PlaceholderSection({ icon, title, description }) {
   return (
@@ -862,9 +1124,7 @@ export default function AdminDashboard() {
         <main className="flex-1 overflow-y-auto p-6">
           {activeSection === 'overview' && <OverviewSection setActiveSection={setActiveSection} />}
           {activeSection === 'resources' && <ResourcesSection showToast={showToast} />}
-          {activeSection === 'bookings' && (
-            <PlaceholderSection icon={<Calendar className="w-8 h-8" />} title="Bookings" description="View and manage all resource booking requests." />
-          )}
+          {activeSection === 'bookings' && <BookingsSection showToast={showToast} />}
           {activeSection === 'users' && (
             <PlaceholderSection icon={<Users className="w-8 h-8" />} title="Users" description="Manage registered users and their roles." />
           )}
