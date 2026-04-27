@@ -27,7 +27,7 @@ export default function Navbar() {
     { name: 'Resources', restricted: true, href: '/resources', route: true },
     { name: 'Tickets', restricted: true, href: '/dashboard#tickets', route: true },
     { name: 'Notifications', restricted: true, href: '/dashboard#notifications', route: true },
-    { name: 'Facilities', restricted: true, href: '/dashboard#facilities', route: true },
+    
   ];
 
   return (
