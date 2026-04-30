@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import {
   ClipboardList, Plus, Clock, CheckCircle,
   AlertCircle, X, Loader2, MapPin, MessageSquare,
-  Paperclip, ChevronRight, Search, Calendar,
-  Wrench, User, LogOut, Settings, Mail, Phone
+  Paperclip, ChevronRight, Search, Calendar, Zap,
+  Wrench, User, LogOut, Settings, Mail, Phone,
+  BookOpen, Beaker, Monitor, Grid3x3, Sparkles,
+  TrendingUp, Users, Bell, ArrowRight
 } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
@@ -20,6 +22,14 @@ const statusColors = {
   RESOLVED: 'bg-green-50 text-green-700 border-green-100',
   CLOSED: 'bg-gray-100 text-gray-600 border-gray-200',
   REJECTED: 'bg-red-50 text-red-700 border-red-100',
+};
+
+const statusBadgeColor = {
+  OPEN: 'bg-blue-100 text-blue-700',
+  IN_PROGRESS: 'bg-yellow-100 text-yellow-700',
+  RESOLVED: 'bg-emerald-100 text-emerald-700',
+  CLOSED: 'bg-gray-100 text-gray-600',
+  REJECTED: 'bg-red-100 text-red-700',
 };
 
 const priorityColors = {
@@ -158,224 +168,480 @@ export default function StudentDashboard() {
 
   const firstName = user?.name?.split(' ')[0] || 'Student';
 
+  // Mock data for resources
+  const mockResources = [
+    { id: 1, name: 'Study Room A', type: 'Study Room', available: true, icon: BookOpen, color: 'from-blue-400 to-blue-600' },
+    { id: 2, name: 'Lab 1 - Chemistry', type: 'Lab', available: true, icon: Beaker, color: 'from-purple-400 to-purple-600' },
+    { id: 3, name: 'Computer Lab', type: 'Equipment', available: false, icon: Monitor, color: 'from-cyan-400 to-blue-600' },
+  ];
+
+  // Mock notifications
+  const mockNotifications = [
+    { id: 1, title: 'Lab Maintenance', desc: 'Chemistry lab will be closed tomorrow', time: '2h ago' },
+    { id: 2, title: 'Booking Confirmed', desc: 'Your study room booking for tomorrow is confirmed', time: '4h ago' },
+    { id: 3, title: 'Equipment Update', desc: 'New projectors installed in Lecture Hall A', time: '1d ago' },
+  ];
+
   return (
     <div className="min-h-screen bg-white font-poppins flex flex-col">
       <Navbar />
 
       <main className="flex-grow pt-20 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto space-y-8">
 
-          {/* Top Section: Title + Create + Profile */}
-          <div className="mb-8 flex flex-col lg:flex-row lg:items-start justify-between gap-6">
-            <div>
-              <h1 className="text-4xl font-black text-sliit-deep mb-2">Dashboard</h1>
-              <p className="text-gray-600">Manage your tickets and profile</p>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() => setShowProfileModal(true)}
-                className="flex items-center gap-2 bg-white border-2 border-sliit-deep text-sliit-deep px-6 py-3 rounded-lg font-bold hover:bg-sliit-deep/5 transition-all"
-              >
-                <User className="w-5 h-5" />
-                Profile
-              </button>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 bg-sliit-gold hover:bg-yellow-500 text-sliit-deep px-6 py-3 rounded-lg font-bold transition-all"
-              >
-                <Plus className="w-5 h-5" />
-                New Ticket
-              </button>
-            </div>
-          </div>
+          {/* ═══════════════════════════════════════════════════════════════════════ */}
+          {/* 1. HEADER / WELCOME AREA */}
+          {/* ═══════════════════════════════════════════════════════════════════════ */}
+          <div className="relative overflow-hidden">
+            {/* Subtle background gradient effect */}
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-sliit-gold/5 rounded-full blur-3xl"></div>
+            <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-sliit-navy/3 rounded-full blur-3xl"></div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 mb-10">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 rounded-lg p-6 shadow-sm">
-              <p className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-2">Total Tickets</p>
-              <p className="text-4xl font-black text-sliit-deep">{stats.total}</p>
-              <p className="text-xs text-gray-600 mt-2">All tickets created</p>
-            </div>
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-2">
+              <div>
+                <h1 className="text-5xl md:text-6xl font-black text-sliit-deep mb-3 leading-tight">
+                  Welcome back, <span className="text-sliit-gold">{firstName}</span>
+                </h1>
+                <p className="text-lg text-gray-600 font-medium">Stay on top of your campus facilities and support requests</p>
+              </div>
 
-            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 rounded-lg p-6 shadow-sm">
-              <p className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-2">Open</p>
-              <p className="text-4xl font-black text-sliit-deep">{stats.open}</p>
-              <p className="text-xs text-gray-600 mt-2">Waiting to start</p>
-            </div>
-
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-l-4 border-orange-500 rounded-lg p-6 shadow-sm">
-              <p className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-2">In Progress</p>
-              <p className="text-4xl font-black text-sliit-deep">{stats.inProgress}</p>
-              <p className="text-xs text-gray-600 mt-2">Being worked on</p>
-            </div>
-
-            <div className="bg-gradient-to-br from-green-50 to-green-100 border-l-4 border-green-500 rounded-lg p-6 shadow-sm">
-              <p className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-2">Resolved</p>
-              <p className="text-4xl font-black text-sliit-deep">{stats.resolved}</p>
-              <p className="text-xs text-gray-600 mt-2">Completed</p>
-            </div>
-
-            <div className="bg-gradient-to-br from-sliit-gold/20 to-yellow-100 border-l-4 border-sliit-gold rounded-lg p-6 shadow-sm">
-              <p className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-2">User</p>
-              <p className="text-2xl font-black text-sliit-deep truncate">{firstName}</p>
-              <p className="text-xs text-gray-600 mt-2">Student Account</p>
-            </div>
-          </div>
-
-          {/* Tabs and Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-            <div className="flex gap-2">
-              {VIEW_TABS.map((tab) => (
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-5 py-2.5 rounded-lg font-bold text-sm transition-all ${
-                    activeTab === tab
-                      ? 'bg-sliit-deep text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  onClick={() => setShowProfileModal(true)}
+                  className="flex items-center justify-center gap-2 px-6 py-3.5 bg-white border-2 border-sliit-deep text-sliit-deep rounded-2xl font-bold hover:bg-sliit-deep/5 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
                 >
-                  {tab === 'MY_INCIDENTS' ? 'My Tickets' : 'Complete'}
+                  <User className="w-5 h-5" />
+                  <span className="hidden sm:inline">Profile</span>
                 </button>
-              ))}
-            </div>
-
-            <div className="relative flex-1 sm:flex-none">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search..."
-                className="w-full sm:w-64 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-sliit-gold focus:ring-2 focus:ring-yellow-100 outline-none transition-all"
-              />
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="flex gap-2 overflow-x-auto pb-3 mb-8">
-            {FILTERS.map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${
-                  filter === f
-                    ? 'bg-sliit-deep text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {f === 'ALL' ? 'All' : f.replace('_', ' ')}
-              </button>
-            ))}
-          </div>
-
-          {/* Error */}
-          {error && (
-            <div className="bg-red-50 border border-red-300 rounded-lg p-4 text-sm text-red-700 flex items-center gap-3 mb-6">
-              <AlertCircle className="w-5 h-5 shrink-0" />
-              <span className="flex-1">{error}</span>
-              <button onClick={fetchTickets} className="font-bold hover:text-red-900">Retry</button>
-            </div>
-          )}
-
-          {/* Loading */}
-          {loading && (
-            <div className="flex items-center justify-center py-32">
-              <div className="text-center">
-                <div className="w-12 h-12 border-4 border-sliit-gold border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-gray-500 font-medium">Loading tickets...</p>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center justify-center gap-2 px-8 py-3.5 bg-gradient-to-r from-sliit-gold to-yellow-400 hover:shadow-xl hover:-translate-y-0.5 text-sliit-deep rounded-2xl font-bold transition-all duration-300"
+                >
+                  <Plus className="w-5 h-5" />
+                  <span>Create Ticket</span>
+                </button>
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Empty State */}
-          {!loading && filtered.length === 0 && (
-            <div className="bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 p-16 text-center">
-              <ClipboardList className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-sliit-deep mb-2">No tickets found</h3>
-              <p className="text-gray-600 mb-8">
-                {search ? `No results for "${search}".` : 'Create a new ticket to get started.'}
-              </p>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="bg-sliit-gold hover:bg-yellow-500 text-sliit-deep px-8 py-3 rounded-lg font-bold transition-all"
-              >
-                Create First Ticket
+          {/* ═══════════════════════════════════════════════════════════════════════ */}
+          {/* 2. SMART ALERT / NOTIFICATION STRIP */}
+          {/* ═══════════════════════════════════════════════════════════════════════ */}
+          <div className="bg-gradient-to-r from-sliit-navy/10 to-sliit-gold/10 border border-sliit-gold/30 rounded-2xl p-5 flex items-start gap-4 backdrop-blur-sm">
+            <div className="w-12 h-12 rounded-xl bg-sliit-gold/20 flex items-center justify-center shrink-0">
+              <AlertCircle className="w-6 h-6 text-sliit-gold animate-pulse" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-sliit-deep mb-1">Campus Update</h3>
+              <p className="text-sm text-gray-600">Library renovation in progress. Some study areas unavailable. <a href="#" className="text-sliit-gold font-semibold hover:underline">Learn more →</a></p>
+            </div>
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════════════════════ */}
+          {/* 3. QUICK STATS GRID */}
+          {/* ═══════════════════════════════════════════════════════════════════════ */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            {/* Total Tickets */}
+            <div className="group relative bg-white border border-gray-200 rounded-2xl p-6 hover:border-sliit-gold/50 hover:shadow-lg transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wide">Total Tickets</h3>
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                    <ClipboardList className="w-5 h-5 text-blue-600" />
+                  </div>
+                </div>
+                <p className="text-4xl font-black text-sliit-deep">{stats.total}</p>
+                <p className="text-xs text-gray-500 mt-2">All reported issues</p>
+              </div>
+            </div>
+
+            {/* Open Issues */}
+            <div className="group relative bg-white border border-gray-200 rounded-2xl p-6 hover:border-sliit-gold/50 hover:shadow-lg transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-50/50 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wide">Open</h3>
+                  <div className="w-10 h-10 rounded-xl bg-yellow-100 flex items-center justify-center">
+                    <AlertCircle className="w-5 h-5 text-yellow-600" />
+                  </div>
+                </div>
+                <p className="text-4xl font-black text-sliit-deep">{stats.open}</p>
+                <p className="text-xs text-gray-500 mt-2">Awaiting attention</p>
+              </div>
+            </div>
+
+            {/* In Progress */}
+            <div className="group relative bg-white border border-gray-200 rounded-2xl p-6 hover:border-sliit-gold/50 hover:shadow-lg transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wide">In Progress</h3>
+                  <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
+                    <Zap className="w-5 h-5 text-orange-600" />
+                  </div>
+                </div>
+                <p className="text-4xl font-black text-sliit-deep">{stats.inProgress}</p>
+                <p className="text-xs text-gray-500 mt-2">Being worked on</p>
+              </div>
+            </div>
+
+            {/* Resolved */}
+            <div className="group relative bg-white border border-gray-200 rounded-2xl p-6 hover:border-sliit-gold/50 hover:shadow-lg transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wide">Resolved</h3>
+                  <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  </div>
+                </div>
+                <p className="text-4xl font-black text-sliit-deep">{stats.resolved}</p>
+                <p className="text-xs text-gray-500 mt-2">Completed successfully</p>
+              </div>
+            </div>
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════════════════════ */}
+          {/* 4. RESOURCE BOOKING SECTION */}
+          {/* ═══════════════════════════════════════════════════════════════════════ */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-black text-sliit-deep flex items-center gap-3">
+                  <Grid3x3 className="w-6 h-6 text-sliit-gold" />
+                  Available Resources
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">Book your campus facilities instantly</p>
+              </div>
+              <button className="hidden md:flex items-center gap-2 text-sliit-gold font-bold hover:gap-3 transition-all">
+                View All <ChevronRight className="w-4 h-4" />
               </button>
             </div>
-          )}
 
-          {/* Tickets List */}
-          {!loading && filtered.length > 0 && (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600 font-medium">
-                Showing <span className="font-bold text-sliit-deep">{filtered.length}</span> ticket{filtered.length !== 1 ? 's' : ''}
-              </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {mockResources.map((resource) => {
+                const IconComponent = resource.icon;
+                return (
+                  <div
+                    key={resource.id}
+                    className={`group relative overflow-hidden rounded-2xl border border-gray-200 hover:border-sliit-gold/50 transition-all duration-300 hover:shadow-lg cursor-pointer ${
+                      resource.available ? 'bg-white' : 'bg-gray-50'
+                    }`}
+                  >
+                    {/* Gradient overlay on hover */}
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-br ${resource.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}
+                    ></div>
 
-              {filtered.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  onClick={() => setSelectedTicket(ticket)}
-                  className="bg-white border border-gray-200 rounded-lg p-5 cursor-pointer hover:shadow-lg hover:border-sliit-gold transition-all duration-200 flex flex-col sm:flex-row sm:items-center gap-5"
-                >
-                  {/* Priority Indicator */}
-                  <div className={`w-2 rounded-full shrink-0 hidden sm:block h-16 ${priorityBar[ticket.priority]}`} />
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-3">
-                      <span className={`text-xs font-bold px-3 py-1 rounded-md border ${statusColors[ticket.status]}`}>
-                        {ticket.status.replace('_', ' ')}
-                      </span>
-                      <span className={`text-xs font-bold px-3 py-1 rounded-md ${priorityColors[ticket.priority]}`}>
-                        {ticket.priority}
-                      </span>
-                      <span className="text-xs font-bold px-3 py-1 rounded-md bg-purple-50 text-purple-700 border border-purple-200">
-                        {ticket.category}
-                      </span>
-                    </div>
-
-                    <h3 className="font-bold text-lg text-sliit-deep mb-2 line-clamp-1">{ticket.title}</h3>
-                    <p className="text-gray-600 text-sm line-clamp-2 mb-3">{ticket.description}</p>
-
-                    {ticket.status === 'REJECTED' && ticket.rejectionReason && (
-                      <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-4 py-3">
-                        <p className="text-xs font-bold uppercase tracking-wide text-red-700 mb-1">Rejection Reason</p>
-                        <p className="text-xs text-red-700 line-clamp-2">{ticket.rejectionReason}</p>
+                    <div className="relative z-10 p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${resource.color} flex items-center justify-center text-white transition-transform duration-300 group-hover:scale-110`}>
+                          <IconComponent className="w-6 h-6" />
+                        </div>
+                        <div
+                          className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            resource.available
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-200 text-gray-600'
+                          }`}
+                        >
+                          {resource.available ? '✓ Available' : '✗ Booked'}
+                        </div>
                       </div>
-                    )}
 
-                    <div className="flex flex-wrap gap-4 text-xs text-gray-600">
-                      <span className="flex items-center gap-1.5">
-                        <MapPin className="w-4 h-4" />
-                        {ticket.location}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(ticket.createdAt).toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <MessageSquare className="w-4 h-4" />
-                        {ticket.comments?.length || 0} comments
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Paperclip className="w-4 h-4" />
-                        {ticket.attachments?.length || 0} files
-                      </span>
-                      {hasTechnicianReply(ticket) && (
-                        <span className="flex items-center gap-1.5 text-sliit-gold font-bold">
-                          <Wrench className="w-4 h-4" />
-                          Technician replied
-                        </span>
-                      )}
+                      <div>
+                        <h3 className="font-bold text-sliit-deep mb-1">{resource.name}</h3>
+                        <p className="text-sm text-gray-600">{resource.type}</p>
+                      </div>
+
+                      <button
+                        className={`w-full py-2.5 rounded-lg font-bold text-sm transition-all duration-300 ${
+                          resource.available
+                            ? 'bg-sliit-gold/20 text-sliit-gold hover:bg-sliit-gold hover:text-sliit-deep'
+                            : 'bg-gray-200 text-gray-600 cursor-not-allowed'
+                        }`}
+                        disabled={!resource.available}
+                      >
+                        {resource.available ? 'Book Now' : 'Not Available'}
+                      </button>
                     </div>
                   </div>
-
-                  <ChevronRight className="w-5 h-5 text-gray-400 shrink-0 hidden sm:block" />
-                </div>
-              ))}
+                );
+              })}
             </div>
-          )}
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════════════════════ */}
+          {/* 5. NOTIFICATIONS PANEL */}
+          {/* ═══════════════════════════════════════════════════════════════════════ */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-4">
+              <div>
+                <h2 className="text-2xl font-black text-sliit-deep flex items-center gap-3">
+                  <ClipboardList className="w-6 h-6 text-sliit-gold" />
+                  Your Tickets
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">Track and manage your reported issues</p>
+              </div>
+
+              {/* Tabs and Controls */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex gap-2">
+                  {VIEW_TABS.map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                        activeTab === tab
+                          ? 'bg-sliit-deep text-white shadow-lg'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {tab === 'MY_INCIDENTS' ? 'My Tickets' : 'Complete'}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="relative flex-1 sm:flex-none">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search tickets..."
+                    className="w-full sm:w-64 pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:border-sliit-gold focus:ring-2 focus:ring-yellow-100 outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Status Filters */}
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {FILTERS.map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
+                      filter === f
+                        ? 'bg-sliit-deep text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {f === 'ALL' ? 'All' : f.replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              {/* Error State */}
+              {error && (
+                <div className="bg-red-50 border border-red-300 rounded-xl p-4 text-sm text-red-700 flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 shrink-0" />
+                  <span className="flex-1">{error}</span>
+                  <button onClick={fetchTickets} className="font-bold hover:text-red-900">Retry</button>
+                </div>
+              )}
+
+              {/* Loading State */}
+              {loading && (
+                <div className="flex items-center justify-center py-24">
+                  <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-sliit-gold border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                    <p className="text-gray-500 font-medium">Loading your tickets...</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!loading && filtered.length === 0 && (
+                <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl border-2 border-dashed border-gray-300 p-12 text-center">
+                  <ClipboardList className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-2xl font-black text-sliit-deep mb-2">No tickets found</h3>
+                  <p className="text-gray-600 mb-8">
+                    {search ? `No results for "${search}".` : 'Create your first ticket to report an issue.'}
+                  </p>
+                  <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="bg-sliit-gold hover:bg-yellow-500 text-sliit-deep px-8 py-3 rounded-xl font-bold transition-all hover:shadow-lg"
+                  >
+                    Create Your First Ticket
+                  </button>
+                </div>
+              )}
+
+              {/* Tickets List */}
+              {!loading && filtered.length > 0 && (
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600 font-medium">
+                    Showing <span className="font-bold text-sliit-deep">{filtered.length}</span> ticket{filtered.length !== 1 ? 's' : ''}
+                  </p>
+
+                  {filtered.map((ticket) => (
+                    <div
+                      key={ticket.id}
+                      onClick={() => setSelectedTicket(ticket)}
+                      className="group relative bg-white border border-gray-200 rounded-2xl p-6 cursor-pointer hover:border-sliit-gold/50 hover:shadow-lg transition-all duration-300"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-sliit-gold/0 to-sliit-gold/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                      <div className="relative z-10 flex flex-col sm:flex-row sm:items-start gap-4">
+                        {/* Priority Bar */}
+                        <div className={`w-1 rounded-full h-auto hidden sm:block shrink-0 ${priorityBar[ticket.priority]}`} />
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0 space-y-3">
+                          {/* Badges */}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className={`text-xs font-bold px-3 py-1.5 rounded-lg border ${statusBadgeColor[ticket.status]}`}>
+                              {ticket.status.replace('_', ' ')}
+                            </span>
+                            <span className={`text-xs font-bold px-3 py-1.5 rounded-lg ${priorityColors[ticket.priority]}`}>
+                              {ticket.priority}
+                            </span>
+                            <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-purple-50 text-purple-700 border border-purple-100">
+                              {ticket.category}
+                            </span>
+                          </div>
+
+                          {/* Title and Description */}
+                          <div>
+                            <h3 className="font-bold text-lg text-sliit-deep mb-1 line-clamp-1">{ticket.title}</h3>
+                            <p className="text-gray-600 text-sm line-clamp-2">{ticket.description}</p>
+                          </div>
+
+                          {/* Rejection Reason */}
+                          {ticket.status === 'REJECTED' && ticket.rejectionReason && (
+                            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+                              <p className="text-xs font-bold uppercase tracking-wide text-red-700 mb-1">Rejection Reason</p>
+                              <p className="text-xs text-red-700 line-clamp-2">{ticket.rejectionReason}</p>
+                            </div>
+                          )}
+
+                          {/* Metadata */}
+                          <div className="flex flex-wrap gap-4 text-xs text-gray-600">
+                            <span className="flex items-center gap-1.5">
+                              <MapPin className="w-4 h-4" />
+                              {ticket.location}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <Calendar className="w-4 h-4" />
+                              {new Date(ticket.createdAt).toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <MessageSquare className="w-4 h-4" />
+                              {ticket.comments?.length || 0} comments
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <Paperclip className="w-4 h-4" />
+                              {ticket.attachments?.length || 0} files
+                            </span>
+                            {hasTechnicianReply(ticket) && (
+                              <span className="flex items-center gap-1.5 text-sliit-gold font-bold">
+                                <Wrench className="w-4 h-4" />
+                                Technician replied
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Chevron */}
+                        <ChevronRight className="w-5 h-5 text-gray-300 shrink-0 hidden sm:block group-hover:text-sliit-gold transition-colors" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ═══════════════════════════════════════════════════════════════════════ */}
+            {/* NOTIFICATIONS PANEL (RIGHT SIDEBAR) */}
+            {/* ═══════════════════════════════════════════════════════════════════════ */}
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-2xl font-black text-sliit-deep flex items-center gap-3">
+                  <Bell className="w-6 h-6 text-sliit-gold" />
+                  Notifications
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">Recent updates</p>
+              </div>
+
+              <div className="space-y-3">
+                {mockNotifications.map((notif) => (
+                  <div key={notif.id} className="group bg-white border border-gray-200 rounded-xl p-4 hover:border-sliit-gold/50 hover:shadow-md transition-all duration-300 cursor-pointer">
+                    <div className="flex gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-sliit-gold/20 flex items-center justify-center shrink-0 group-hover:bg-sliit-gold/30 transition-colors">
+                        <Sparkles className="w-4 h-4 text-sliit-gold" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-sm text-sliit-deep mb-0.5">{notif.title}</h4>
+                        <p className="text-xs text-gray-600 line-clamp-2">{notif.desc}</p>
+                        <p className="text-xs text-gray-400 mt-2">{notif.time}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button className="w-full py-2.5 text-center text-sm font-bold text-sliit-gold hover:text-sliit-deep transition-colors">
+                View All Notifications →
+              </button>
+            </div>
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════════════════════ */}
+          {/* 7. CALL-TO-ACTION SECTION */}
+          {/* ═══════════════════════════════════════════════════════════════════════ */}
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-sliit-deep to-sliit-navy p-12 md:p-16">
+            {/* Background effects */}
+            <div className="absolute top-0 right-0 w-96 h-96 bg-sliit-gold/10 rounded-full blur-3xl -mr-48 -mt-48"></div>
+            <div className="absolute bottom-0 left-0 w-72 h-72 bg-sliit-gold/5 rounded-full blur-3xl -ml-36 -mb-36"></div>
+
+            <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+              {/* Left: Text Content */}
+              <div className="flex flex-col justify-center space-y-6">
+                <div>
+                  <h2 className="text-4xl md:text-5xl font-black text-white mb-4 leading-tight">
+                    Make Campus Life <span className="text-sliit-gold">Seamless</span>
+                  </h2>
+                  <p className="text-lg text-gray-200 font-medium">
+                    Report issues instantly, book resources effortlessly, and stay connected with real-time updates from your smart campus hub.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="flex items-center justify-center gap-2 px-8 py-3.5 bg-sliit-gold hover:bg-yellow-400 text-sliit-deep rounded-xl font-bold transition-all hover:shadow-lg hover:-translate-y-0.5"
+                  >
+                    <Zap className="w-5 h-5" />
+                    Report Issue Now
+                  </button>
+                  <button className="flex items-center justify-center gap-2 px-8 py-3.5 border-2 border-sliit-gold text-sliit-gold hover:bg-sliit-gold/10 rounded-xl font-bold transition-all">
+                    Browse Resources
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Right: Stats / Features */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6">
+                  <div className="text-4xl font-black text-sliit-gold mb-2">{stats.total}</div>
+                  <p className="text-sm font-bold text-gray-200">Tickets Tracked</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6">
+                  <div className="text-4xl font-black text-sliit-light mb-2">24/7</div>
+                  <p className="text-sm font-bold text-gray-200">Support Access</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6">
+                  <div className="text-4xl font-black text-sliit-gold mb-2">{mockResources.length}</div>
+                  <p className="text-sm font-bold text-gray-200">Facilities Available</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6">
+                  <div className="text-4xl font-black text-sliit-light mb-2">{((stats.resolved / (stats.total || 1)) * 100).toFixed(0)}%</div>
+                  <p className="text-sm font-bold text-gray-200">Resolution Rate</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
 
