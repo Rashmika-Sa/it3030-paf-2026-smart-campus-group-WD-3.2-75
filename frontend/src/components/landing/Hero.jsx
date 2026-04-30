@@ -37,7 +37,7 @@ export default function Hero() {
               >
                 Features <ArrowRight className="h-5 w-5" />
               </a>
-              <Link to="/auth" state={{ isRegister: true }} className="h-14 w-full sm:w-auto px-10 bg-transparent border-[2px] border-sliit-navy text-sliit-navy hover:bg-sliit-navy/5 rounded-full font-bold text-lg transition-all duration-300 flex items-center justify-center">
+              <Link to="/auth" state={{ isRegister: true }} className="h-14 w-full sm:w-auto px-10 bg-[#003087] hover:bg-[#002060] text-white rounded-full font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center cursor-pointer">
                 Register
               </Link>
             </div>

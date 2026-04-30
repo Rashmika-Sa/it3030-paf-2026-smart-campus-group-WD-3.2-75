@@ -1,18 +1,17 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const BACKEND = 'http://localhost:8081';
 
 export function useNotifications() {
-  const token = localStorage.getItem('token');
-  const tokenRef = useRef(token);
-
   const [notifications, setNotifications] = useState([]);
   // Start loading only if user is logged in, so the page shows a spinner immediately
-  const [loading, setLoading] = useState(Boolean(token));
+  const [loading, setLoading] = useState(Boolean(localStorage.getItem('token')));
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const getToken = () => localStorage.getItem('token');
+
   const fetchUnreadCount = useCallback(async () => {
-    const t = tokenRef.current;
+    const t = getToken();
     if (!t) return;
     try {
       const res = await fetch(`${BACKEND}/api/notifications/unread-count`, {
@@ -28,7 +27,7 @@ export function useNotifications() {
   }, []);
 
   const fetchNotifications = useCallback(async () => {
-    const t = tokenRef.current;
+    const t = getToken();
     if (!t) {
       setLoading(false);
       return;
@@ -51,7 +50,7 @@ export function useNotifications() {
   }, []);
 
   const markAsRead = useCallback(async (id) => {
-    const t = tokenRef.current;
+    const t = getToken();
     if (!t) return;
     try {
       await fetch(`${BACKEND}/api/notifications/${id}/read`, {
@@ -68,7 +67,7 @@ export function useNotifications() {
   }, []);
 
   const markAllAsRead = useCallback(async () => {
-    const t = tokenRef.current;
+    const t = getToken();
     if (!t) return;
     try {
       await fetch(`${BACKEND}/api/notifications/read-all`, {
@@ -82,11 +81,28 @@ export function useNotifications() {
     }
   }, []);
 
+  const deleteNotification = useCallback(async (id) => {
+    const t = getToken();
+    if (!t) return;
+    try {
+      const res = await fetch(`${BACKEND}/api/notifications/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      if (res.ok) {
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+        setUnreadCount((c) => Math.max(0, c - 1));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   useEffect(() => {
     fetchUnreadCount();
     const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
   }, [fetchUnreadCount]);
 
-  return { notifications, unreadCount, loading, fetchNotifications, markAsRead, markAllAsRead };
+  return { notifications, unreadCount, loading, fetchNotifications, markAsRead, markAllAsRead, deleteNotification };
 }

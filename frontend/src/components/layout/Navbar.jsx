@@ -1,13 +1,41 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, X, Lock, KeyRound, Home, Bell } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../hooks/useNotifications';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
-  const isLoggedIn = Boolean(localStorage.getItem('token'));
   const { unreadCount } = useNotifications();
+
+  // Validate token on component mount and when it changes
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setIsLoggedIn(false);
+      return;
+    }
+
+    // Validate token with backend
+    fetch('http://localhost:8081/api/auth/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (res.ok) {
+          setIsLoggedIn(true);
+        } else {
+          // Token is invalid, remove it
+          localStorage.removeItem('token');
+          setIsLoggedIn(false);
+        }
+      })
+      .catch(() => {
+        // Backend is down or error, remove token to be safe
+        localStorage.removeItem('token');
+        setIsLoggedIn(false);
+      });
+  }, []);
 
   const handleRestrictedClick = (e) => {
     e.preventDefault();

@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  LayoutDashboard, Package, Users, Bell, LogOut, Menu, X,
+  LayoutDashboard, Package, Users, LogOut, Menu, X,
   Plus, Pencil, Trash2, Search, AlertCircle, CheckCircle,
   Building2, FlaskConical, MonitorSmartphone, Video,
   Activity, ChevronRight, ToggleLeft, ToggleRight, GraduationCap,
   Calendar, Ticket, Settings, Clock, CalendarDays, Wrench,
+  UserCog, Save, KeyRound, ShieldCheck,
   XCircle, Ban, Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -40,6 +41,38 @@ const TYPE_COLOR = {
 const EMPTY_FORM = {
   name: '', type: 'LECTURE_HALL', capacity: '', location: '',
   description: '', status: 'ACTIVE', availabilityWindows: [], maintenanceReturnDate: '',
+};
+
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+const ROLE_LABEL = {
+  ADMIN: 'Admin',
+  TECHNICIAN: 'Technician',
+  USER: 'Student',
+  STUDENT: 'Student',
+};
+
+const TICKET_STATUS_STYLE = {
+  OPEN: 'bg-blue-100 text-blue-700 border-blue-200',
+  IN_PROGRESS: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  RESOLVED: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  CLOSED: 'bg-gray-100 text-gray-600 border-gray-200',
+  REJECTED: 'bg-red-100 text-red-700 border-red-200',
+};
+
+const PRIORITY_LABEL = {
+  LOW: 'Low',
+  MEDIUM: 'Medium',
+  HIGH: 'High',
+  URGENT: 'Urgent',
 };
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -941,6 +974,404 @@ function PlaceholderSection({ icon, title, description }) {
   );
 }
 
+function UsersSection({ showToast }) {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editingUser, setEditingUser] = useState(null);
+  const [form, setForm] = useState({ name: '', email: '', sliitId: '', role: 'USER' });
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+
+  const openEdit = (u) => {
+    setEditingUser(u);
+    setForm({
+      name: u.name || '',
+      email: u.email || '',
+      sliitId: u.sliitId || '',
+      role: u.role || 'USER',
+    });
+  };
+
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${BACKEND}/api/users/admin/users`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) {
+        setUsers(await res.json());
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+
+  const saveUser = async () => {
+    if (!editingUser) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`${BACKEND}/api/users/admin/users/${editingUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        showToast(data.message || 'Failed to update user', 'error');
+        return;
+      }
+      showToast('User updated successfully');
+      setEditingUser(null);
+      await fetchUsers();
+    } catch {
+      showToast('Failed to update user', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteUser = async (u) => {
+    if (!window.confirm(`Delete user ${u.email}?`)) return;
+    setDeletingId(u.id);
+    try {
+      const res = await fetch(`${BACKEND}/api/users/admin/users/${u.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        showToast(data.message || 'Failed to delete user', 'error');
+        return;
+      }
+      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+      showToast('User removed');
+    } catch {
+      showToast('Failed to delete user', 'error');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-3 pb-1">
+        <div className="w-10 h-10 rounded-xl bg-sliit-gold/10 flex items-center justify-center shrink-0">
+          <Users className="w-5 h-5 text-yellow-600" />
+        </div>
+        <div>
+          <h2 className="font-bold text-[#222222] text-base leading-tight">Users Management</h2>
+          <p className="text-xs text-gray-400">View, edit, and remove registered users</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                {['Name', 'Email', 'SLIIT ID', 'Role', 'Actions'].map((h) => (
+                  <th key={h} className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-8 h-8 border-3 border-sliit-gold border-t-transparent rounded-full animate-spin" />
+                      <span className="text-sm text-gray-400">Loading users…</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-16 text-center text-gray-400">No users found</td>
+                </tr>
+              ) : users.map((u) => (
+                <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="py-3 px-4 font-medium text-[#222222]">{u.name || '—'}</td>
+                  <td className="py-3 px-4 text-gray-600">{u.email || '—'}</td>
+                  <td className="py-3 px-4 text-gray-600">{u.sliitId || '—'}</td>
+                  <td className="py-3 px-4">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${u.role === 'ADMIN'
+                      ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                      : u.role === 'TECHNICIAN'
+                        ? 'bg-blue-100 text-blue-700 border-blue-200'
+                        : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                      {ROLE_LABEL[u.role] || u.role}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => openEdit(u)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-blue-700 border border-blue-200 hover:bg-blue-50"
+                      >
+                        <Pencil className="w-3 h-3" /> Edit
+                      </button>
+                      <button
+                        onClick={() => deleteUser(u)}
+                        disabled={deletingId === u.id}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-700 border border-red-200 hover:bg-red-50 disabled:opacity-60"
+                      >
+                        {deletingId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                        Remove
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {editingUser && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <UserCog className="w-5 h-5 text-sliit-gold" />
+                <h3 className="font-bold text-[#222222]">Edit User</h3>
+              </div>
+              <button onClick={() => setEditingUser(null)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Name</label>
+                <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-yellow-400" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Email</label>
+                <input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-yellow-400" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">SLIIT ID</label>
+                <input value={form.sliitId} onChange={(e) => setForm((f) => ({ ...f, sliitId: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-yellow-400" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Role</label>
+                <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:border-yellow-400">
+                  <option value="USER">User</option>
+                  <option value="TECHNICIAN">Technician</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-2">
+              <button onClick={() => setEditingUser(null)} className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50">Cancel</button>
+              <button onClick={saveUser} disabled={saving}
+                className="px-4 py-2 text-sm font-semibold text-[#222222] bg-sliit-gold rounded-xl hover:bg-yellow-500 disabled:opacity-60 inline-flex items-center gap-2">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TicketsSection() {
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchTickets = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${BACKEND}/api/tickets`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) {
+        setTickets(await res.json());
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchTickets(); }, [fetchTickets]);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-3 pb-1">
+        <div className="w-10 h-10 rounded-xl bg-sliit-gold/10 flex items-center justify-center shrink-0">
+          <Ticket className="w-5 h-5 text-yellow-600" />
+        </div>
+        <div>
+          <h2 className="font-bold text-[#222222] text-base leading-tight">Support Tickets</h2>
+          <p className="text-xs text-gray-400">All student tickets submitted to the system</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                {['Title', 'Student', 'Category', 'Priority', 'Status', 'Created'].map((h) => (
+                  <th key={h} className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-8 h-8 border-3 border-sliit-gold border-t-transparent rounded-full animate-spin" />
+                      <span className="text-sm text-gray-400">Loading tickets…</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : tickets.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-16 text-center text-gray-400">No tickets found</td>
+                </tr>
+              ) : tickets.map((t) => (
+                <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="py-3 px-4 max-w-[260px]">
+                    <p className="font-medium text-[#222222] truncate" title={t.title}>{t.title}</p>
+                    <p className="text-xs text-gray-400 truncate" title={t.description}>{t.description}</p>
+                  </td>
+                  <td className="py-3 px-4 text-gray-600">
+                    <p className="font-medium text-[#222222]">{t.createdBy?.name || '—'}</p>
+                    <p className="text-xs text-gray-400">{t.createdBy?.email || '—'}</p>
+                  </td>
+                  <td className="py-3 px-4 text-gray-600">{t.category || '—'}</td>
+                  <td className="py-3 px-4 text-gray-600">{PRIORITY_LABEL[t.priority] || t.priority || '—'}</td>
+                  <td className="py-3 px-4">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${TICKET_STATUS_STYLE[t.status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                      {t.status}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-gray-500 whitespace-nowrap">{timeAgo(t.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsSection({ showToast }) {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      showToast('Please fill all password fields', 'error');
+      return;
+    }
+    if (newPassword.length < 8) {
+      showToast('New password must be at least 8 characters', 'error');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showToast('New password and confirm password do not match', 'error');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch(`${BACKEND}/api/users/admin/change-password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        showToast(data.message || 'Failed to change password', 'error');
+        return;
+      }
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      showToast('Admin password updated');
+    } catch {
+      showToast('Failed to change password', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-3 pb-1">
+        <div className="w-10 h-10 rounded-xl bg-sliit-gold/10 flex items-center justify-center shrink-0">
+          <ShieldCheck className="w-5 h-5 text-yellow-600" />
+        </div>
+        <div>
+          <h2 className="font-bold text-[#222222] text-base leading-tight">Admin Settings</h2>
+          <p className="text-xs text-gray-400">Security preferences for administrator accounts</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-w-xl">
+        <div className="flex items-center gap-2 mb-4">
+          <KeyRound className="w-4 h-4 text-sliit-gold" />
+          <h3 className="font-bold text-[#222222]">Change Password</h3>
+        </div>
+        <form onSubmit={handleChangePassword} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Current Password</label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-yellow-400"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">New Password</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-yellow-400"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Confirm New Password</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-yellow-400"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={saving}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sliit-gold text-[#222222] font-bold text-sm hover:bg-yellow-500 disabled:opacity-60"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+            Update Password
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ─── Overview ─────────────────────────────────────────────────────────────────
 function OverviewSection({ setActiveSection }) {
   const [resources, setResources] = useState([]);
@@ -1044,7 +1475,6 @@ export default function AdminDashboard() {
     { id: 'resources',      label: 'Resources',      icon: <Package className="w-5 h-5" /> },
     { id: 'bookings',       label: 'Bookings',       icon: <Calendar className="w-5 h-5" /> },
     { id: 'users',          label: 'Users',          icon: <Users className="w-5 h-5" /> },
-    { id: 'notifications',  label: 'Notifications',  icon: <Bell className="w-5 h-5" /> },
     { id: 'tickets',        label: 'Tickets',        icon: <Ticket className="w-5 h-5" /> },
     { id: 'settings',       label: 'Settings',       icon: <Settings className="w-5 h-5" /> },
   ];
@@ -1125,18 +1555,9 @@ export default function AdminDashboard() {
           {activeSection === 'overview' && <OverviewSection setActiveSection={setActiveSection} />}
           {activeSection === 'resources' && <ResourcesSection showToast={showToast} />}
           {activeSection === 'bookings' && <BookingsSection showToast={showToast} />}
-          {activeSection === 'users' && (
-            <PlaceholderSection icon={<Users className="w-8 h-8" />} title="Users" description="Manage registered users and their roles." />
-          )}
-          {activeSection === 'notifications' && (
-            <PlaceholderSection icon={<Bell className="w-8 h-8" />} title="Notifications" description="Send and manage campus-wide notifications." />
-          )}
-          {activeSection === 'tickets' && (
-            <PlaceholderSection icon={<Ticket className="w-8 h-8" />} title="Support Tickets" description="Review and respond to student support tickets." />
-          )}
-          {activeSection === 'settings' && (
-            <PlaceholderSection icon={<Settings className="w-8 h-8" />} title="Settings" description="Configure system-wide settings and preferences." />
-          )}
+          {activeSection === 'users' && <UsersSection showToast={showToast} />}
+          {activeSection === 'tickets' && <TicketsSection />}
+          {activeSection === 'settings' && <SettingsSection showToast={showToast} />}
         </main>
       </div>
 

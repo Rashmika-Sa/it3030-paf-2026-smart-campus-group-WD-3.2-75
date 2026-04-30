@@ -46,6 +46,10 @@ public class NotificationService {
         return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(userId);
     }
 
+    public List<Notification> getAllNotifications() {
+        return notificationRepository.findAll();
+    }
+
     public long getUnreadCount(String userId) {
         return notificationRepository.countByRecipientIdAndReadFalse(userId);
     }
@@ -58,6 +62,15 @@ public class NotificationService {
         }
         n.setRead(true);
         notificationRepository.save(n);
+    }
+
+    public void deleteNotification(String notificationId, String userId) {
+        Notification n = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found"));
+        if (!n.getRecipientId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not authorized");
+        }
+        notificationRepository.delete(n);
     }
 
     public void markAllAsRead(String userId) {

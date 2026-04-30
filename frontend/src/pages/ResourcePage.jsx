@@ -8,7 +8,7 @@ import {
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 
-const BACKEND = 'http://localhost:8082';
+const BACKEND = 'http://localhost:8081';
 const token = () => localStorage.getItem('token');
 
 const TYPE_OPTIONS = [
